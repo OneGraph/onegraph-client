@@ -1,6 +1,6 @@
 {
   "name": "onegraph-apollo-client",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "description": "Apollo Client for OneGraph",
   "main": "dist/oneGraphApolloClient.umd.js",
   "module": "dist/oneGraphApolloClient.esm.js",
@@ -23,7 +23,7 @@
   "scripts": {
     "prettier": "prettier --write \"src/**/*.js\"",
     "build": "rollup --config rollup.config.js",
-    "prepublish": "npm run build"
+    "prepublishOnly": "npm run build"
   },
   "prettier": {
     "singleQuote": true,
