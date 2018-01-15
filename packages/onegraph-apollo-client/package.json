@@ -1,6 +1,6 @@
 {
   "name": "onegraph-apollo-client",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Apollo Client for OneGraph",
   "main": "dist/oneGraphApolloClient.umd.js",
   "module": "dist/oneGraphApolloClient.esm.js",
