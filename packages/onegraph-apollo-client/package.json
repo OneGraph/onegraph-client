@@ -1,9 +1,8 @@
 {
   "name": "onegraph-apollo-client",
-  "version": "0.1.6",
+  "version": "0.1.7",
   "description": "Apollo Client for OneGraph",
-  "main": "dist/oneGraphApolloClient.umd.js",
-  "module": "dist/oneGraphApolloClient.esm.js",
+  "main": "dist/bundle.umd.js",
   "license": "MIT",
   "peerDependencies": {
     "apollo-cache-inmemory": "1.x",
