@@ -1,0 +1,11 @@
+{
+  "license": "MIT",
+  "scripts": {
+    "bootstrap": "lerna bootstrap",
+    "build": "lerna run -- build",
+    "deploy": "lerna publish"
+  },
+  "devDependencies": {
+    "lerna": "^2.7.0"
+  }
+}
