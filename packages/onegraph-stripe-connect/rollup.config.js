@@ -1,12 +1,13 @@
 import resolve from 'rollup-plugin-node-resolve';
 import babel from 'rollup-plugin-babel';
+import postcss from 'rollup-plugin-postcss';
 
 export default {
-  input: 'src/OneGraphApolloClient.js',
+  input: 'src/OneGraphStripeConnect.js',
   output: {
     file: 'dist/bundle.umd.js',
     format: 'umd',
-    name: 'onegraph-apollo-client',
+    name: 'onegraph-stripe-connect',
     exports: 'named',
     sourcemap: true,
   },
@@ -15,6 +16,9 @@ export default {
     babel({
       exclude: 'node_modules/**',
     }),
+    postcss({
+      plugins: [],
+    }),
   ],
-  external: ['apollo-cache-inmemory', 'apollo-client', 'apollo-link-http'],
+  external: ['react'],
 };

@@ -1,0 +1,35 @@
+{
+  "name": "onegraph-stripe-connect",
+  "version": "0.1.7",
+  "description": "Stripe Connect button for OneGraph",
+  "main": "dist/bundle.umd.js",
+  "license": "MIT",
+  "peerDependencies": {
+    "react": "0.14.x || 15.* || ^15.0.0 || ^16.0.0"
+  },
+  "devDependencies": {
+    "babel-cli": "^6.26.0",
+    "babel-core": "^6.26.0",
+    "babel-plugin-external-helpers": "^6.22.0",
+    "babel-plugin-transform-class-properties": "^6.24.1",
+    "babel-plugin-transform-object-rest-spread": "^6.26.0",
+    "babel-preset-env": "^1.6.1",
+    "babel-preset-react": "^6.24.1",
+    "prettier": "1.10.2",
+    "rollup": "^0.54.0",
+    "rollup-plugin-babel": "^3.0.3",
+    "rollup-plugin-node-resolve": "^3.0.2",
+    "rollup-plugin-postcss": "^1.2.1"
+  },
+  "scripts": {
+    "prettier": "prettier --write \"src/**/*.js\"",
+    "build": "rollup --config rollup.config.js",
+    "clean": "mkdir -p dist && rm -r dist"
+  },
+  "prettier": {
+    "singleQuote": true,
+    "trailingComma": "all",
+    "bracketSpacing": false,
+    "jsxBracketSameLine": true
+  }
+}

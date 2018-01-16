@@ -2,8 +2,9 @@
   "license": "MIT",
   "scripts": {
     "bootstrap": "lerna bootstrap",
+    "clean": "lerna run -- clean",
     "build": "lerna run -- build",
-    "deploy": "lerna publish"
+    "deploy": "npm run clean && npm run build && lerna publish"
   },
   "devDependencies": {
     "lerna": "^2.7.0"
