@@ -1,6 +1,6 @@
 {
   "name": "onegraph-apollo-client",
-  "version": "0.1.8",
+  "version": "0.1.9",
   "description": "Apollo Client for OneGraph",
   "main": "dist/bundle.umd.js",
   "license": "MIT",

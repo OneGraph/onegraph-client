@@ -1,6 +1,6 @@
 {
   "name": "onegraph-stripe-connect",
-  "version": "0.1.7",
+  "version": "0.1.9",
   "description": "Stripe Connect button for OneGraph",
   "main": "dist/bundle.umd.js",
   "license": "MIT",
