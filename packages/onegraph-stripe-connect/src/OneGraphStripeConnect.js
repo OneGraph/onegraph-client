@@ -34,11 +34,14 @@ class OneGraphStripeConnect extends React.Component {
   //   applicationId: Proptypes.string.isRequired,
   //   oneGraphUrl: Proptypes.string.isRequired,
   //   oauthFinishPath: Proptypes.string.isRequired,
+  //   oauthFinishOrigin: Proptypes.string.isRequired,
+  //   onAuthGranted: Proptypes.function,
   // };
 
   static defaultProps = {
     oneGraphUrl: DEFAULT_ONE_GRAPH_URL,
     oauthFinishPath: DEFAULT_FINISH_PATH,
+    oauthFinishOrigin: window.location.origin,
   };
 
   _authWindow;
@@ -85,7 +88,8 @@ class OneGraphStripeConnect extends React.Component {
     authUrl.pathname = '/oauth/start';
     authUrl.searchParams.set('service', 'stripe');
     authUrl.searchParams.set('app_id', this.props.applicationId);
-    authUrl.searchParams.set('path', this.props.oauthFinishPath);
+    authUrl.searchParams.set('redirect_path', this.props.oauthFinishPath);
+    authUrl.searchParams.set('redirect_origin', this.props.oauthFinishOrigin);
 
     this._authWindow = window.open(
       authUrl,
