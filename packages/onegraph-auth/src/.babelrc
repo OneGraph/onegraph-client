@@ -3,13 +3,11 @@
     ["env", {
       "modules": false
      }],
-     "flow",
-    "react"
+    "flow"
   ],
   "plugins": [
     "external-helpers",
     "transform-object-rest-spread",
     "transform-class-properties"
-  ],
-  "ignore": ["*.css"]
+  ]
 }
