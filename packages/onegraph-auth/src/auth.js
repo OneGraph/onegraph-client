@@ -3,6 +3,8 @@
 // TODOs:
 //   Should this class keep track of whether you're currently signed in?
 
+import "regenerator-runtime/runtime";
+
 export type Service = 'stripe' | 'google' | 'github' | 'twitter';
 
 export type Opts = {
