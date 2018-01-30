@@ -33,7 +33,9 @@
     "jsxBracketSameLine": true
   },
   "dependencies": {
+    "babel-plugin-idx": "^2.2.0",
     "flow-bin": "^0.63.1",
+    "idx": "^2.2.0",
     "regenerator-runtime": "^0.11.1",
     "rollup-plugin-flow": "^1.1.1"
   }

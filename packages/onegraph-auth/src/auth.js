@@ -1,9 +1,7 @@
 //@flow
 
-// TODOs:
-//   Should this class keep track of whether you're currently signed in?
-
-import "regenerator-runtime/runtime";
+import 'regenerator-runtime/runtime';
+const idx = require('idx');
 
 export type Service = 'stripe' | 'google' | 'github' | 'twitter';
 
@@ -13,10 +11,6 @@ export type Opts = {
   service: Service,
   oauthFinishOrigin?: string,
   oauthFinishPath?: string,
-};
-
-type Config = {
-  oneGraphAuthUrl: string,
 };
 
 export type AuthResponse = void; // TODO: proper auth response
@@ -94,10 +88,57 @@ function normalizeRedirectPath(path: string): string {
   return u.pathname;
 }
 
+function loggedInQuery(service: Service): string {
+  switch (service) {
+    case 'stripe':
+      return 'query { me { stripe { id }}}';
+    case 'google':
+      return 'query { me { google { sub }}}';
+    case 'github':
+      return 'query { me { github { id }}}';
+    case 'twitter':
+      return 'query { me { twitter { id }}}';
+    default:
+      (service: empty); // exhaustive switch check from flow
+      throw new Error('No such service');
+  }
+}
+
+function isLoggedIn(queryResult: Object, service: Service): boolean {
+  switch (service) {
+    case 'stripe':
+      return !!idx(queryResult, _ => _.data.me.stripe.id);
+    case 'google':
+      return !!idx(queryResult, _ => _.data.me.google.sub);
+    case 'github':
+      return !!idx(queryResult, _ => _.data.me.github.id);
+    case 'twitter':
+      return !!idx(queryResult, _ => _.data.me.twitter.id);
+    default:
+      (service: empty); // exhaustive switch check from flow
+      throw new Error('No such service');
+  }
+}
+
+function fetchQuery(fetchUrl: string, query: string): Promise<Object> {
+  return fetch(fetchUrl, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Accept: 'application/json',
+    },
+    credentials: 'include',
+    body: JSON.stringify({query}),
+  }).then(response => response.json());
+}
+
+const DEFAULT_ONEGRAPH_ORIGIN = 'https://serve.onegraph.com';
+
 class OneGraphAuth {
   _authWindow: Window;
   _intervalId: ?IntervalID;
   _authUrl: string;
+  _fetchUrl: string;
   service: Service;
   friendlyServiceName: string;
   _redirectOrigin: string;
@@ -107,9 +148,7 @@ class OneGraphAuth {
     const {service, appId, oauthFinishOrigin, oauthFinishPath} = opts;
     this.service = service;
     this.friendlyServiceName = friendlyServiceName(this.service);
-    const authUrl = new URL(
-      opts.oneGraphOrigin || 'https://serve.onegraph.com',
-    );
+    const authUrl = new URL(opts.oneGraphOrigin || DEFAULT_ONEGRAPH_ORIGIN);
     authUrl.pathname = '/oauth/start';
     authUrl.searchParams.set('service', service);
     authUrl.searchParams.set('app_id', appId);
@@ -127,6 +166,11 @@ class OneGraphAuth {
     authUrl.searchParams.set('redirect_path', this._redirectPath.substr(1));
 
     this._authUrl = authUrl.toString();
+
+    const fetchUrl = new URL(opts.oneGraphOrigin || DEFAULT_ONEGRAPH_ORIGIN);
+    fetchUrl.pathname = '/dynamic';
+    fetchUrl.searchParams.set('application_id', appId);
+    this._fetchUrl = fetchUrl.toString();
   }
 
   cleanup = () => {
@@ -167,6 +211,14 @@ class OneGraphAuth {
       this.friendlyServiceName,
     );
     await this._waitForAuthFinish();
+  };
+
+  isLoggedIn = async (): Promise<boolean> => {
+    const result = await fetchQuery(
+      this._fetchUrl,
+      loggedInQuery(this.service),
+    );
+    return isLoggedIn(result, this.service);
   };
 }
 
