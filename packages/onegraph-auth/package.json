@@ -1,6 +1,6 @@
 {
   "name": "onegraph-auth",
-  "version": "0.1.13",
+  "version": "0.1.14",
   "description": "Auth helpers for OneGraph",
   "main": "dist/bundle.umd.js",
   "license": "MIT",
