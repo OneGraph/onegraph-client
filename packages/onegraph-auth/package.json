@@ -8,6 +8,7 @@
     "babel-cli": "^6.26.0",
     "babel-core": "^6.26.0",
     "babel-plugin-external-helpers": "^6.22.0",
+    "babel-plugin-idx": "^2.2.0",
     "babel-plugin-syntax-async-functions": "^6.13.0",
     "babel-plugin-transform-async-to-generator": "^6.24.1",
     "babel-plugin-transform-class-properties": "^6.24.1",
@@ -15,9 +16,11 @@
     "babel-preset-env": "^1.6.1",
     "babel-preset-es2015-rollup": "^3.0.0",
     "babel-preset-flow": "^6.23.0",
+    "flow-bin": "^0.63.1",
     "prettier": "1.10.2",
     "rollup": "^0.54.0",
     "rollup-plugin-babel": "^3.0.3",
+    "rollup-plugin-flow": "^1.1.1",
     "rollup-plugin-node-resolve": "^3.0.2"
   },
   "scripts": {
@@ -33,10 +36,7 @@
     "jsxBracketSameLine": true
   },
   "dependencies": {
-    "babel-plugin-idx": "^2.2.0",
-    "flow-bin": "^0.63.1",
     "idx": "^2.2.0",
-    "regenerator-runtime": "^0.11.1",
-    "rollup-plugin-flow": "^1.1.1"
+    "regenerator-runtime": "^0.11.1"
   }
 }
