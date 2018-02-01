@@ -1,8 +1,9 @@
 {
   "name": "onegraph-apollo-client",
-  "version": "0.1.11",
+  "version": "0.1.15",
   "description": "Apollo Client for OneGraph",
   "main": "dist/bundle.umd.js",
+  "module": "dist/bundle.es.js",
   "license": "MIT",
   "peerDependencies": {
     "apollo-cache-inmemory": "1.x",
@@ -15,14 +16,16 @@
     "babel-plugin-transform-object-rest-spread": "^6.26.0",
     "babel-preset-env": "^1.6.1",
     "babel-preset-flow": "^6.23.0",
+    "flow-bin": "^0.63.1",
     "prettier": "1.10.2",
     "rollup": "^0.54.0",
     "rollup-plugin-babel": "^3.0.3",
+    "rollup-plugin-flow": "^1.1.1",
     "rollup-plugin-node-resolve": "^3.0.2"
   },
   "scripts": {
     "prettier": "prettier --write \"src/**/*.js\"",
-    "build": "rollup --config rollup.config.js",
+    "build": "node build.js",
     "clean": "mkdir -p dist && rm -r dist",
     "flow": "flow"
   },
@@ -31,9 +34,5 @@
     "trailingComma": "all",
     "bracketSpacing": false,
     "jsxBracketSameLine": true
-  },
-  "dependencies": {
-    "flow-bin": "^0.63.1",
-    "rollup-plugin-flow": "^1.1.1"
   }
 }

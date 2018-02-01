@@ -11,6 +11,10 @@ export default {
     exports: 'named',
     sourcemap: true,
   },
+  globals: {
+    'onegraph-auth': 'OneGraphAuth',
+    'react': 'React',
+  },
   plugins: [
     resolve(),
     babel({

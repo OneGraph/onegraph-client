@@ -1,108 +1,59 @@
+//@flow
+
 import React from 'react';
 import './css/stripe-connect.css';
+import {OneGraphAuth} from 'onegraph-auth';
+// import 'regenerator-runtime/runtime';
 
-const windowWidth = Math.min(800, Math.floor(window.outerWidth * 0.8));
-const windowHeight = Math.min(630, Math.floor(window.outerHeight * 0.5));
-const windowArea = {
-  width: windowWidth,
-  height: windowHeight,
-  left: Math.round(window.screenX + (window.outerWidth - windowWidth) / 2),
-  top: Math.round(window.screenY + (window.outerHeight - windowHeight) / 8),
+import type {AuthResponse} from 'onegraph-auth';
+
+type Props = {
+  appId: string,
+  oneGraphOrigin: string,
+  oauthFinishPath: string,
+  oauthFinishOrigin: string,
+  onAuthResponse?: (response: AuthResponse) => void,
+  oneGraphAuth?: OneGraphAuth,
 };
 
-// TODO: figure out how to show the toolbar icons in the window for password managers
-const windowOpts = {
-  width: windowArea.width,
-  height: windowArea.height,
-  left: windowArea.left,
-  top: windowArea.top,
-  toolbar: 0,
-  scrollbars: 1,
-  status: 1,
-  resizable: 1,
-  menuBar: 0,
-};
-
-const POLL_INTERVAL = 35;
 const DEFAULT_ONE_GRAPH_URL = 'https://serve.onegraph.com';
-const DEFAULT_FINISH_PATH = 'oauth/stripe/finish';
 
-class OneGraphStripeConnect extends React.Component {
-  // Leaving for documentation purposes, but don't want to
-  // require the proptypes dependency
-  // static propTypes = {
-  //   applicationId: Proptypes.string.isRequired,
-  //   oneGraphUrl: Proptypes.string.isRequired,
-  //   oauthFinishPath: Proptypes.string.isRequired,
-  //   oauthFinishOrigin: Proptypes.string.isRequired,
-  //   onAuthGranted: Proptypes.function,
-  // };
+class OneGraphStripeConnect extends React.Component<Props> {
+  _oneGraphAuth: OneGraphAuth;
 
   static defaultProps = {
-    oneGraphUrl: DEFAULT_ONE_GRAPH_URL,
-    oauthFinishPath: DEFAULT_FINISH_PATH,
+    oneGraphOrigin: DEFAULT_ONE_GRAPH_URL,
+    oauthFinishPath: window.location.pathname,
     oauthFinishOrigin: window.location.origin,
   };
 
-  _authWindow;
-
-  _intervalId;
-
-  constructor(props) {
-    if (!props.applicationId) {
+  constructor(props: Props) {
+    const {appId, oneGraphOrigin, oauthFinishPath, oauthFinishOrigin} = props;
+    if (!appId) {
       throw new Error(
-        'OneGraphStripeConnect requires `applicationId` to be passed as a prop'
+        'OneGraphStripeConnect requires `appId` to be passed as a prop',
       );
     }
     super(props);
+    this._oneGraphAuth =
+      this.props.oneGraphAuth ||
+      new OneGraphAuth({
+        oneGraphOrigin,
+        appId,
+        service: 'stripe',
+        oauthFinishOrigin,
+        oauthFinishPath,
+      });
   }
 
-  _clear = () => {
-    clearInterval(this._intervalId);
-    this._authWindow && this._authWindow.close();
-  };
-
-  _waitForAuthFinish = () => {
-    this._intervalId = setInterval(() => {
-      try {
-        const authLocation = this._authWindow.location;
-        if (document.location.host === authLocation.host) {
-          if (authLocation.pathname === '/' + this.props.oauthFinishPath) {
-            this._clear();
-            this.props.onAuthGranted();
-          }
-        }
-      } catch (e) {
-        if (e instanceof DOMException) {
-          // do nothing--probably on the Stripe domain
-        } else {
-          console.error('unexpected error waiting for auth to finish', e);
-          this._clear();
-        }
-      }
-    }, POLL_INTERVAL);
-  };
-
-  _onAuthClick = () => {
-    const authUrl = new URL(this.props.oneGraphUrl);
-    authUrl.pathname = '/oauth/start';
-    authUrl.searchParams.set('service', 'stripe');
-    authUrl.searchParams.set('app_id', this.props.applicationId);
-    authUrl.searchParams.set('redirect_path', this.props.oauthFinishPath);
-    authUrl.searchParams.set('redirect_origin', this.props.oauthFinishOrigin);
-
-    this._authWindow = window.open(
-      authUrl,
-      'oneGraphAuth',
-      Object.keys(windowOpts)
-        .map(k => `${k}=${windowOpts[k]}`)
-        .join(',')
-    );
-    this._waitForAuthFinish();
+  _onAuthClick = async (): Promise<AuthResponse> => {
+    const {onAuthResponse} = this.props;
+    const response = await this._oneGraphAuth.login();
+    onAuthResponse && onAuthResponse(response);
   };
 
   componentWillUnmount() {
-    this._clear();
+    this._oneGraphAuth.cleanup();
   }
 
   render() {
@@ -113,5 +64,5 @@ class OneGraphStripeConnect extends React.Component {
     );
   }
 }
-export {OneGraphStripeConnect};
+
 export default OneGraphStripeConnect;

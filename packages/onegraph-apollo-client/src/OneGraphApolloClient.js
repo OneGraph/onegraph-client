@@ -32,5 +32,4 @@ class OneGraphApolloClient extends ApolloClient {
   }
 }
 
-export {OneGraphApolloClient};
 export default OneGraphApolloClient;

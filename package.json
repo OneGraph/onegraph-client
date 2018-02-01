@@ -1,12 +1,31 @@
 {
   "license": "MIT",
+  "private": true,
+  "workspaces": ["packages/*"],
   "scripts": {
     "bootstrap": "lerna bootstrap",
     "clean": "lerna run -- clean",
     "build": "lerna run -- build",
-    "deploy": "npm run clean && npm run build && lerna publish"
+    "deploy": "npm run clean && npm run flow && npm run build && lerna publish",
+    "flow": "flow"
   },
   "devDependencies": {
-    "lerna": "^2.7.0"
-  }
+    "babel-core": "^6.26.0",
+    "babel-plugin-external-helpers": "^6.22.0",
+    "babel-plugin-idx": "^2.2.0",
+    "babel-plugin-syntax-async-functions": "^6.13.0",
+    "babel-plugin-transform-async-to-generator": "^6.24.1",
+    "babel-plugin-transform-class-properties": "^6.24.1",
+    "babel-plugin-transform-object-rest-spread": "^6.26.0",
+    "babel-preset-env": "^1.6.1",
+    "babel-preset-es2015-rollup": "^3.0.0",
+    "babel-preset-flow": "^6.23.0",
+    "flow-bin": "^0.64.0",
+    "lerna": "^2.7.0",
+    "rollup": "^0.55.1",
+    "rollup-plugin-babel": "^3.0.3",
+    "rollup-plugin-node-resolve": "^3.0.2",
+    "rollup-plugin-postcss": "^1.2.8"
+  },
+  "dependencies": {}
 }
