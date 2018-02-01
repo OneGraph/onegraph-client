@@ -1,6 +1,6 @@
 {
   "name": "onegraph-stripe-connect",
-  "version": "0.1.15",
+  "version": "0.1.16",
   "description": "Stripe Connect button for OneGraph",
   "main": "dist/bundle.umd.js",
   "module": "dist/bundle.es.js",
@@ -38,7 +38,6 @@
     "jsxBracketSameLine": true
   },
   "dependencies": {
-    "lerna": "^2.8.0",
     "onegraph-auth": "^0.1.15"
   }
 }
