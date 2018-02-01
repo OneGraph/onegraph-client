@@ -1,12 +1,14 @@
 {
   "license": "MIT",
   "private": true,
-  "workspaces": ["packages/*"],
+  "workspaces": [
+    "packages/*"
+  ],
   "scripts": {
     "bootstrap": "lerna bootstrap",
     "clean": "lerna run -- clean",
     "build": "lerna run -- build",
-    "deploy": "npm run clean && npm run flow && npm run build && lerna publish",
+    "deploy": "yarn run clean && yarn run build && lerna publish",
     "flow": "flow"
   },
   "devDependencies": {
@@ -21,7 +23,7 @@
     "babel-preset-es2015-rollup": "^3.0.0",
     "babel-preset-flow": "^6.23.0",
     "flow-bin": "^0.64.0",
-    "lerna": "^2.7.0",
+    "lerna": "^2.8.0",
     "rollup": "^0.55.1",
     "rollup-plugin-babel": "^3.0.3",
     "rollup-plugin-node-resolve": "^3.0.2",
