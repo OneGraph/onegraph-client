@@ -1,6 +1,5 @@
 //@flow
 
-import 'regenerator-runtime/runtime';
 const idx = require('idx');
 
 export type Service = 'stripe' | 'google' | 'github' | 'twitter';
@@ -120,6 +119,28 @@ function isLoggedIn(queryResult: Object, service: Service): boolean {
   }
 }
 
+function logoutMutation(service: Service): string {
+  const serviceEnum = service.toUpperCase();
+  return `mutation {
+    signoutServices(data: {services: [${serviceEnum}]}) {
+      me {
+        stripe {
+          id
+        }
+        google {
+          sub
+        }
+        github {
+          id
+        }
+        twitter {
+          id
+        }
+      }
+    }
+  }`;
+}
+
 function fetchQuery(fetchUrl: string, query: string): Promise<Object> {
   return fetch(fetchUrl, {
     method: 'POST',
@@ -169,7 +190,7 @@ class OneGraphAuth {
 
     const fetchUrl = new URL(opts.oneGraphOrigin || DEFAULT_ONEGRAPH_ORIGIN);
     fetchUrl.pathname = '/dynamic';
-    fetchUrl.searchParams.set('application_id', appId);
+    fetchUrl.searchParams.set('app_id', appId);
     this._fetchUrl = fetchUrl.toString();
   }
 
@@ -203,22 +224,27 @@ class OneGraphAuth {
     });
   };
 
-  login = async (): Promise<AuthResponse> => {
+  login = (): Promise<AuthResponse> => {
     this.cleanup();
     this._authWindow = createAuthWindow(
       this._authUrl,
       this.service,
       this.friendlyServiceName,
     );
-    await this._waitForAuthFinish();
+    return this._waitForAuthFinish();
   };
 
-  isLoggedIn = async (): Promise<boolean> => {
-    const result = await fetchQuery(
-      this._fetchUrl,
-      loggedInQuery(this.service),
+  isLoggedIn = (): Promise<boolean> => {
+    return fetchQuery(this._fetchUrl, loggedInQuery(this.service)).then(
+      result => isLoggedIn(result, this.service),
     );
-    return isLoggedIn(result, this.service);
+  };
+
+  logout = (): Promise<boolean> => {
+    this.cleanup();
+    return fetchQuery(this._fetchUrl, logoutMutation(this.service)).then(
+      result => isLoggedIn({data: result.signoutServices}, this.service),
+    );
   };
 }
 

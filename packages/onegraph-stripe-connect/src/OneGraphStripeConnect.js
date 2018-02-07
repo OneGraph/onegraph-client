@@ -3,7 +3,6 @@
 import React from 'react';
 import './css/stripe-connect.css';
 import {OneGraphAuth} from 'onegraph-auth';
-// import 'regenerator-runtime/runtime';
 
 import type {AuthResponse} from 'onegraph-auth';
 
@@ -46,10 +45,12 @@ class OneGraphStripeConnect extends React.Component<Props> {
       });
   }
 
-  _onAuthClick = async (): Promise<AuthResponse> => {
+  _onAuthClick = (): Promise<AuthResponse> => {
     const {onAuthResponse} = this.props;
-    const response = await this._oneGraphAuth.login();
-    onAuthResponse && onAuthResponse(response);
+    return this._oneGraphAuth.login().then(response => {
+      onAuthResponse && onAuthResponse(response);
+      return response;
+    });
   };
 
   componentWillUnmount() {

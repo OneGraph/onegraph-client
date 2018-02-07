@@ -5,9 +5,9 @@ import {InMemoryCache} from 'apollo-cache-inmemory';
 const DEFAULT_ONE_GRAPH_URL = 'https://serve.onegraph.com/dynamic';
 
 function validateConfig(config) {
-  if (!config.applicationId) {
+  if (!config.appId) {
     throw new Error(
-      'createApolloClient was called with invalid config: missing applicationId'
+      'createApolloClient was called with invalid config: missing appId'
     );
   }
 }
@@ -16,7 +16,7 @@ class OneGraphApolloClient extends ApolloClient {
   constructor(config) {
     validateConfig(config);
     const uri = new URL(config.oneGraphUrl || DEFAULT_ONE_GRAPH_URL);
-    uri.searchParams.append('application_id', config.applicationId);
+    uri.searchParams.append('app_id', config.appId);
     super({
       link: new HttpLink({
         uri,
