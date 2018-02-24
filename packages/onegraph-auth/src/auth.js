@@ -13,6 +13,9 @@ export type Opts = {
 };
 
 export type AuthResponse = void; // TODO: proper auth response
+export type LogoutResult = {
+  result: 'success' | 'failure'
+};
 
 type Window = any;
 
@@ -103,7 +106,7 @@ function loggedInQuery(service: Service): string {
   }
 }
 
-function isLoggedIn(queryResult: Object, service: Service): boolean {
+function getIsLoggedIn(queryResult: Object, service: Service): boolean {
   switch (service) {
     case 'stripe':
       return !!idx(queryResult, _ => _.data.me.stripe.id);
@@ -236,14 +239,17 @@ class OneGraphAuth {
 
   isLoggedIn = (): Promise<boolean> => {
     return fetchQuery(this._fetchUrl, loggedInQuery(this.service)).then(
-      result => isLoggedIn(result, this.service),
+      result => getIsLoggedIn(result, this.service),
     );
   };
 
-  logout = (): Promise<boolean> => {
+  logout = (): Promise<LogoutResult> => {
     this.cleanup();
     return fetchQuery(this._fetchUrl, logoutMutation(this.service)).then(
-      result => isLoggedIn({data: result.signoutServices}, this.service),
+      result => {
+        const loggedIn = getIsLoggedIn({data: result.signoutServices}, this.service);
+        return {result: loggedIn ? 'failure' : 'success'};
+      }
     );
   };
 }
