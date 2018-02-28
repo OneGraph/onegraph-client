@@ -150,6 +150,7 @@ function fetchQuery(fetchUrl: string, query: string): Promise<Object> {
     headers: {
       'Content-Type': 'application/json',
       Accept: 'application/json',
+      show_beta_schema: true,
     },
     credentials: 'include',
     body: JSON.stringify({query}),
