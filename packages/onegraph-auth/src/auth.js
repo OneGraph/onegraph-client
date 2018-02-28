@@ -14,7 +14,7 @@ export type Opts = {
 
 export type AuthResponse = void; // TODO: proper auth response
 export type LogoutResult = {
-  result: 'success' | 'failure'
+  result: 'success' | 'failure',
 };
 
 type Window = any;
@@ -207,10 +207,7 @@ class OneGraphAuth {
       this._intervalId = setInterval(() => {
         try {
           const authLocation = this._authWindow.location;
-          if (
-            authLocation.origin === this._redirectOrigin &&
-            authLocation.pathname === this._redirectPath
-          ) {
+          if (authLocation.origin === this._redirectOrigin) {
             this.cleanup();
             resolve();
           }
@@ -238,19 +235,24 @@ class OneGraphAuth {
   };
 
   isLoggedIn = (): Promise<boolean> => {
-    return fetchQuery(this._fetchUrl, loggedInQuery(this.service)).then(
-      result => getIsLoggedIn(result, this.service),
-    );
+    return fetchQuery(
+      this._fetchUrl,
+      loggedInQuery(this.service),
+    ).then(result => getIsLoggedIn(result, this.service));
   };
 
   logout = (): Promise<LogoutResult> => {
     this.cleanup();
-    return fetchQuery(this._fetchUrl, logoutMutation(this.service)).then(
-      result => {
-        const loggedIn = getIsLoggedIn({data: result.signoutServices}, this.service);
-        return {result: loggedIn ? 'failure' : 'success'};
-      }
-    );
+    return fetchQuery(
+      this._fetchUrl,
+      logoutMutation(this.service),
+    ).then(result => {
+      const loggedIn = getIsLoggedIn(
+        {data: result.signoutServices},
+        this.service,
+      );
+      return {result: loggedIn ? 'failure' : 'success'};
+    });
   };
 }
 
