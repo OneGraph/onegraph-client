@@ -184,7 +184,7 @@ class OneGraphAuth {
     }
     authUrl.searchParams.set('redirect_origin', this._redirectOrigin);
     this._redirectPath = normalizeRedirectPath(
-      oauthFinishPath || window.location.path,
+      oauthFinishPath || window.location.pathname,
     );
     // remove leading slash
     authUrl.searchParams.set('redirect_path', this._redirectPath.substr(1));
