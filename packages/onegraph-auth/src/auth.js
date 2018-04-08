@@ -2,7 +2,14 @@
 
 const idx = require('idx');
 
-export type Service = 'stripe' | 'google' | 'github' | 'twitter';
+export type Service =
+  | 'eventil'
+  | 'github'
+  | 'google'
+  | 'stripe'
+  | 'twilio'
+  | 'twitter'
+  | 'zendesk';
 
 export type Opts = {
   oneGraphOrigin?: string,
@@ -23,14 +30,20 @@ const POLL_INTERVAL = 35;
 
 function friendlyServiceName(service: Service): string {
   switch (service) {
-    case 'stripe':
-      return 'Stripe';
+    case 'eventil':
+      return 'Eventil';
     case 'google':
       return 'Google';
     case 'github':
       return 'GitHub';
+    case 'stripe':
+      return 'Stripe';
+    case 'twilio':
+      return 'Twilio';
     case 'twitter':
       return 'Twitter';
+    case 'zendesk':
+      return 'Zendesk';
     default:
       (service: empty); // exhaustive switch check from flow
       throw new Error('No such service');
@@ -92,14 +105,20 @@ function normalizeRedirectPath(path: string): string {
 
 function loggedInQuery(service: Service): string {
   switch (service) {
-    case 'stripe':
-      return 'query { me { stripe { id }}}';
+    case 'eventil':
+      return 'query { me { eventil { id }}}';
     case 'google':
       return 'query { me { google { sub }}}';
     case 'github':
       return 'query { me { github { id }}}';
+    case 'stripe':
+      return 'query { me { stripe { id }}}';
+    case 'twilio':
+      return 'query { me { twilio { id }}}';
     case 'twitter':
       return 'query { me { twitter { id }}}';
+    case 'zendesk':
+      return 'query { me { zendesk { id }}}';
     default:
       (service: empty); // exhaustive switch check from flow
       throw new Error('No such service');
@@ -108,14 +127,20 @@ function loggedInQuery(service: Service): string {
 
 function getIsLoggedIn(queryResult: Object, service: Service): boolean {
   switch (service) {
-    case 'stripe':
-      return !!idx(queryResult, _ => _.data.me.stripe.id);
+    case 'eventil':
+      return !!idx(queryResult, _ => _.data.me.eventil.id);
     case 'google':
       return !!idx(queryResult, _ => _.data.me.google.sub);
     case 'github':
       return !!idx(queryResult, _ => _.data.me.github.id);
+    case 'stripe':
+      return !!idx(queryResult, _ => _.data.me.stripe.id);
+    case 'twilio':
+      return !!idx(queryResult, _ => _.data.me.twilio.id);
     case 'twitter':
       return !!idx(queryResult, _ => _.data.me.twitter.id);
+    case 'zendesk':
+      return !!idx(queryResult, _ => _.data.me.zendesk.id);
     default:
       (service: empty); // exhaustive switch check from flow
       throw new Error('No such service');
@@ -127,7 +152,7 @@ function logoutMutation(service: Service): string {
   return `mutation {
     signoutServices(data: {services: [${serviceEnum}]}) {
       me {
-        stripe {
+        eventil {
           id
         }
         google {
@@ -136,7 +161,16 @@ function logoutMutation(service: Service): string {
         github {
           id
         }
+        stripe {
+          id
+        }
+        twilio {
+          id
+        }
         twitter {
+          id
+        }
+        zendesk {
           id
         }
       }
@@ -236,24 +270,22 @@ class OneGraphAuth {
   };
 
   isLoggedIn = (): Promise<boolean> => {
-    return fetchQuery(
-      this._fetchUrl,
-      loggedInQuery(this.service),
-    ).then(result => getIsLoggedIn(result, this.service));
+    return fetchQuery(this._fetchUrl, loggedInQuery(this.service)).then(
+      result => getIsLoggedIn(result, this.service),
+    );
   };
 
   logout = (): Promise<LogoutResult> => {
     this.cleanup();
-    return fetchQuery(
-      this._fetchUrl,
-      logoutMutation(this.service),
-    ).then(result => {
-      const loggedIn = getIsLoggedIn(
-        {data: result.signoutServices},
-        this.service,
-      );
-      return {result: loggedIn ? 'failure' : 'success'};
-    });
+    return fetchQuery(this._fetchUrl, logoutMutation(this.service)).then(
+      result => {
+        const loggedIn = getIsLoggedIn(
+          {data: result.signoutServices},
+          this.service,
+        );
+        return {result: loggedIn ? 'failure' : 'success'};
+      },
+    );
   };
 }
 
