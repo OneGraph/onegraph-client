@@ -83,7 +83,6 @@ function getWindowOpts(): Object {
 function createAuthWindow(
   authUrlString: string,
   service: Service,
-  friendlyServiceName: string,
   stateParam: StateParam,
 ): Window {
   const windowOpts = getWindowOpts();
@@ -91,7 +90,7 @@ function createAuthWindow(
   authUrl.searchParams.set('state', stateParam);
   return window.open(
     authUrl.toString(),
-    `Log in with ${friendlyServiceName}`,
+    `Log in with ${friendlyServiceName(service)}`,
     Object.keys(windowOpts)
       .map(k => `${k}=${windowOpts[k]}`)
       .join(','),
@@ -243,12 +242,9 @@ function makeStateParam(): StateParam {
 const DEFAULT_ONEGRAPH_ORIGIN = 'https://serve.onegraph.com';
 
 class OneGraphAuth {
-  _authWindow: Window;
-  _intervalId: ?IntervalID;
-  _authUrl: string;
+  _authWindows: {[service: Service]: Window} = {};
+  _intervalIds: {[service: Service]: IntervalID} = {};
   _fetchUrl: string;
-  service: Service;
-  friendlyServiceName: string;
   _redirectOrigin: string;
   _redirectPath: string;
   _accessToken: ?string = null;
@@ -257,30 +253,18 @@ class OneGraphAuth {
   _appId: string;
 
   constructor(opts: Opts) {
-    const {service, appId, oauthFinishOrigin, oauthFinishPath} = opts;
-    this.service = service;
-    this.friendlyServiceName = friendlyServiceName(this.service);
+    const {appId, oauthFinishOrigin, oauthFinishPath} = opts;
     this._oneGraphOrigin = opts.oneGraphOrigin || DEFAULT_ONEGRAPH_ORIGIN;
     this._appId = appId;
-    const authUrl = new URL(this._oneGraphOrigin);
-    authUrl.pathname = '/oauth/start';
-    authUrl.searchParams.set('service', service);
-    authUrl.searchParams.set('app_id', appId);
-    authUrl.searchParams.set('response_type', 'code');
     this._redirectOrigin = normalizeRedirectOrigin(
       oauthFinishOrigin || window.location.origin,
     );
     if (this._redirectOrigin !== window.location.origin) {
       console.warn('oauthFinishOrigin does not match window.location.origin');
     }
-    authUrl.searchParams.set('redirect_origin', this._redirectOrigin);
     this._redirectPath = normalizeRedirectPath(
       oauthFinishPath || window.location.pathname,
     );
-
-    authUrl.searchParams.set('redirect_path', this._redirectPath);
-
-    this._authUrl = authUrl.toString();
 
     const fetchUrl = new URL(opts.oneGraphOrigin || DEFAULT_ONEGRAPH_ORIGIN);
     fetchUrl.pathname = '/dynamic';
@@ -288,9 +272,20 @@ class OneGraphAuth {
     this._fetchUrl = fetchUrl.toString();
   }
 
-  cleanup = () => {
-    this._intervalId && clearInterval(this._intervalId);
-    this._authWindow && this._authWindow.close();
+  _clearInterval = (service: Service) => {
+    clearInterval(this._intervalIds[service]);
+    delete this._intervalIds[service];
+  };
+
+  _clearAuthWindow = (service: Service) => {
+    const w = this._authWindows[service];
+    w && w.close();
+    delete this._authWindows[service];
+  };
+
+  cleanup = (service: Service) => {
+    this._clearInterval(service);
+    this._clearAuthWindow(service);
   };
 
   accessToken = () => this._accessToken;
@@ -303,11 +298,29 @@ class OneGraphAuth {
     }
   };
 
-  _waitForAuthFinish = (stateParam: StateParam): Promise<AuthResponse> => {
+  friendlyServiceName(service: Service) {
+    return friendlyServiceName(service);
+  }
+
+  _makeAuthUrl = (service: Service) => {
+    const authUrl = new URL(this._oneGraphOrigin);
+    authUrl.pathname = '/oauth/start';
+    authUrl.searchParams.set('service', service);
+    authUrl.searchParams.set('app_id', this._appId);
+    authUrl.searchParams.set('response_type', 'code');
+    authUrl.searchParams.set('redirect_origin', this._redirectOrigin);
+    authUrl.searchParams.set('redirect_path', this._redirectPath);
+    return authUrl.toString();
+  };
+
+  _waitForAuthFinish = (
+    service: Service,
+    stateParam: StateParam,
+  ): Promise<AuthResponse> => {
     return new Promise((resolve, reject) => {
-      this._intervalId = setInterval(() => {
+      this._intervalIds[service] = setInterval(() => {
         try {
-          const authLocation = this._authWindow.location;
+          const authLocation = this._authWindows[service].location;
           if (authLocation.origin === this._redirectOrigin) {
             const params = new URL(authLocation).searchParams;
             if (stateParam !== params.get('state')) {
@@ -348,14 +361,17 @@ class OneGraphAuth {
                   .catch(e => reject(e));
               }
             }
-            this.cleanup();
+            this.cleanup(service);
           }
         } catch (e) {
           if (e instanceof window.DOMException) {
             // do nothing--probably on the service's or onegraph's domain
           } else {
-            console.error('unexpected error waiting for auth to finish', e);
-            this.cleanup();
+            console.error(
+              'unexpected error waiting for auth to finish for ' + service,
+              e,
+            );
+            this.cleanup(service);
             reject(e);
           }
         }
@@ -363,45 +379,41 @@ class OneGraphAuth {
     });
   };
 
-  login = (): Promise<AuthResponse> => {
-    this.cleanup();
+  login = (service: Service): Promise<AuthResponse> => {
+    this.cleanup(service);
     const stateParam = makeStateParam();
-    this._authWindow = createAuthWindow(
-      this._authUrl,
-      this.service,
-      this.friendlyServiceName,
+    this._authWindows[service] = createAuthWindow(
+      this._makeAuthUrl(service),
+      service,
       stateParam,
     );
-    return this._waitForAuthFinish(stateParam);
+    return this._waitForAuthFinish(service, stateParam);
   };
 
-  isLoggedIn = (): Promise<boolean> => {
+  isLoggedIn = (service: Service): Promise<boolean> => {
     const accessToken = this._accessToken;
     if (accessToken) {
       return fetchQuery(
         this._fetchUrl,
-        loggedInQuery(this.service),
+        loggedInQuery(service),
         accessToken,
-      ).then(result => getIsLoggedIn(result, this.service));
+      ).then(result => getIsLoggedIn(result, service));
     } else {
       console.warn('Asking for isLoggedIn without any access token');
       return Promise.resolve(false);
     }
   };
 
-  logout = (): Promise<LogoutResult> => {
-    this.cleanup();
+  logout = (service: Service): Promise<LogoutResult> => {
+    this.cleanup(service);
     const accessToken = this._accessToken;
     if (accessToken) {
       return fetchQuery(
         this._fetchUrl,
-        logoutMutation(this.service),
+        logoutMutation(service),
         accessToken,
       ).then(result => {
-        const loggedIn = getIsLoggedIn(
-          {data: result.signoutServices},
-          this.service,
-        );
+        const loggedIn = getIsLoggedIn({data: result.signoutServices}, service);
         return {result: loggedIn ? 'failure' : 'success'};
       });
     } else {
