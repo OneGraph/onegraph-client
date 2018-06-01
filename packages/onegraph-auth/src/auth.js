@@ -293,6 +293,16 @@ class OneGraphAuth {
     this._authWindow && this._authWindow.close();
   };
 
+  accessToken = () => this._accessToken;
+
+  authHeaders = () => {
+    if (this._accessToken) {
+      return {Authentication: `Bearer ${this._accessToken}`};
+    } else {
+      return {};
+    }
+  };
+
   _waitForAuthFinish = (stateParam: StateParam): Promise<AuthResponse> => {
     return new Promise((resolve, reject) => {
       this._intervalId = setInterval(() => {
