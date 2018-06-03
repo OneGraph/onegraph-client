@@ -39,7 +39,6 @@ class OneGraphStripeConnect extends React.Component<Props> {
       new OneGraphAuth({
         oneGraphOrigin,
         appId,
-        service: 'stripe',
         oauthFinishOrigin,
         oauthFinishPath,
       });
@@ -47,14 +46,14 @@ class OneGraphStripeConnect extends React.Component<Props> {
 
   _onAuthClick = (): Promise<AuthResponse> => {
     const {onAuthResponse} = this.props;
-    return this._oneGraphAuth.login().then(response => {
+    return this._oneGraphAuth.login('stripe').then(response => {
       onAuthResponse && onAuthResponse(response);
       return response;
     });
   };
 
   componentWillUnmount() {
-    this._oneGraphAuth.cleanup();
+    this._oneGraphAuth.cleanup('stripe');
   }
 
   render() {
