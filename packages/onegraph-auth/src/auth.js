@@ -1,7 +1,10 @@
 //@flow
 
 import OAuthError from './oauthError';
+import {hasLocalStorage, InMemoryStorage, LocalStorage} from './storage';
 const idx = require('idx');
+
+import type {Storage} from './storage';
 
 export type Service =
   | 'eventil'
@@ -19,16 +22,21 @@ export type Opts = {
   oauthFinishOrigin?: string,
   oauthFinishPath?: string,
   saveAuthToStorage?: boolean,
+  storage?: Storage,
 };
 
-export type AuthResponse = void; // TODO: proper auth response
 export type LogoutResult = {
   result: 'success' | 'failure',
 };
 
-type Window = any;
+type Token = {
+  accessToken: string,
+  expireDate: number,
+};
 
-type AccessToken = string;
+export type AuthResponse = {token: Token};
+
+type Window = any;
 
 type StateParam = string;
 
@@ -190,12 +198,12 @@ function logoutMutation(service: Service): string {
 function fetchQuery(
   fetchUrl: string,
   query: string,
-  accessToken: AccessToken,
+  token: Token,
 ): Promise<Object> {
   return fetch(fetchUrl, {
     method: 'POST',
     headers: {
-      Authentication: `Bearer ${accessToken}`,
+      Authentication: `Bearer ${token.accessToken}`,
       'Content-Type': 'application/json',
       Accept: 'application/json',
     },
@@ -209,7 +217,7 @@ function exchangeCode(
   redirectOrigin: string,
   redirectPath: string,
   code: string,
-  accessToken?: ?AccessToken,
+  token?: ?Token,
 ): Promise<Object> {
   const url = new URL(oneGraphOrigin);
   url.pathname = '/oauth/code';
@@ -220,7 +228,7 @@ function exchangeCode(
   const headers = {
     'Content-Type': 'application/json',
     Accept: 'application/json',
-    ...(accessToken ? {Authentication: `Bearer ${accessToken}`} : {}),
+    ...(token ? {Authentication: `Bearer ${token.accessToken}`} : {}),
   };
   return fetch(url.toString(), {
     method: 'POST',
@@ -239,6 +247,25 @@ function makeStateParam(): StateParam {
   return byteArrayToString(window.crypto.getRandomValues(new Uint8Array(32)));
 }
 
+function isExpired(token: Token): boolean {
+  return token.expireDate < Date.now();
+}
+
+function tokenFromStorage(storage: Storage, appId: string): ?Token {
+  const v = storage.getItem(appId);
+  if (v) {
+    const possibleToken = JSON.parse(v);
+    if (
+      typeof possibleToken.accessToken === 'string' &&
+      typeof possibleToken.expireDate === 'number' &&
+      !isExpired(possibleToken)
+    ) {
+      return possibleToken;
+    }
+  }
+  return null;
+}
+
 const DEFAULT_ONEGRAPH_ORIGIN = 'https://serve.onegraph.com';
 
 class OneGraphAuth {
@@ -247,15 +274,17 @@ class OneGraphAuth {
   _fetchUrl: string;
   _redirectOrigin: string;
   _redirectPath: string;
-  _accessToken: ?string = null;
-  _oneGraphOrigin: string;
+  _accessToken: ?Token = null;
+  oneGraphOrigin: string;
   _redirectPath: string;
-  _appId: string;
+  appId: string;
+  _storageKey: string;
+  _storage: Storage;
 
   constructor(opts: Opts) {
     const {appId, oauthFinishOrigin, oauthFinishPath} = opts;
-    this._oneGraphOrigin = opts.oneGraphOrigin || DEFAULT_ONEGRAPH_ORIGIN;
-    this._appId = appId;
+    this.oneGraphOrigin = opts.oneGraphOrigin || DEFAULT_ONEGRAPH_ORIGIN;
+    this.appId = appId;
     this._redirectOrigin = normalizeRedirectOrigin(
       oauthFinishOrigin || window.location.origin,
     );
@@ -270,6 +299,12 @@ class OneGraphAuth {
     fetchUrl.pathname = '/dynamic';
     fetchUrl.searchParams.set('app_id', appId);
     this._fetchUrl = fetchUrl.toString();
+    this._storage =
+      opts.storage || hasLocalStorage()
+        ? new LocalStorage()
+        : new InMemoryStorage();
+    this._storageKey = this.appId;
+    this._accessToken = tokenFromStorage(this._storage, this._storageKey);
   }
 
   _clearInterval = (service: Service) => {
@@ -288,29 +323,34 @@ class OneGraphAuth {
     this._clearAuthWindow(service);
   };
 
-  accessToken = () => this._accessToken;
+  accessToken = (): ?Token => this._accessToken;
 
-  authHeaders = () => {
+  authHeaders = (): {Authentication?: string} => {
     if (this._accessToken) {
-      return {Authentication: `Bearer ${this._accessToken}`};
+      return {Authentication: `Bearer ${this._accessToken.accessToken}`};
     } else {
       return {};
     }
   };
 
-  friendlyServiceName(service: Service) {
+  friendlyServiceName(service: Service): string {
     return friendlyServiceName(service);
   }
 
-  _makeAuthUrl = (service: Service) => {
-    const authUrl = new URL(this._oneGraphOrigin);
+  _makeAuthUrl = (service: Service): string => {
+    const authUrl = new URL(this.oneGraphOrigin);
     authUrl.pathname = '/oauth/start';
     authUrl.searchParams.set('service', service);
-    authUrl.searchParams.set('app_id', this._appId);
+    authUrl.searchParams.set('app_id', this.appId);
     authUrl.searchParams.set('response_type', 'code');
     authUrl.searchParams.set('redirect_origin', this._redirectOrigin);
     authUrl.searchParams.set('redirect_path', this._redirectPath);
     return authUrl.toString();
+  };
+
+  _setToken = (token: Token) => {
+    this._accessToken = token;
+    this._storage.setItem(this._storageKey, JSON.stringify(token));
   };
 
   _waitForAuthFinish = (
@@ -341,8 +381,8 @@ class OneGraphAuth {
                 );
               } else {
                 exchangeCode(
-                  this._oneGraphOrigin,
-                  this._appId,
+                  this.oneGraphOrigin,
+                  this.appId,
                   this._redirectOrigin,
                   this._redirectPath,
                   code,
@@ -351,9 +391,16 @@ class OneGraphAuth {
                   .then(response => {
                     if (response.error) {
                       reject(new OAuthError(response));
-                    } else if (response.access_token) {
-                      this._accessToken = response.access_token;
-                      resolve();
+                    } else if (
+                      typeof response.access_token === 'string' &&
+                      typeof response.expires_in === 'number'
+                    ) {
+                      const token: Token = {
+                        accessToken: response.access_token,
+                        expireDate: Date.now() + response.expires_in * 1000,
+                      };
+                      this._setToken(token);
+                      resolve({token});
                     } else {
                       reject(new Error('Unexpected result from server'));
                     }
@@ -399,7 +446,6 @@ class OneGraphAuth {
         accessToken,
       ).then(result => getIsLoggedIn(result, service));
     } else {
-      console.warn('Asking for isLoggedIn without any access token');
       return Promise.resolve(false);
     }
   };
@@ -419,6 +465,12 @@ class OneGraphAuth {
     } else {
       return Promise.resolve({result: 'failure'});
     }
+  };
+
+  destroy = () => {
+    Object.keys(this._intervalIds).forEach(key => this.cleanup(key));
+    Object.keys(this._authWindows).forEach(key => this.cleanup(key));
+    this._storage.removeItem(this._storageKey);
   };
 }
 
