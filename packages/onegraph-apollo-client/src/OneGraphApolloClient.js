@@ -1,32 +1,45 @@
+//@flow
+
 import {ApolloClient} from 'apollo-client';
 import {HttpLink} from 'apollo-link-http';
+import {ApolloLink} from 'apollo-link';
 import {InMemoryCache} from 'apollo-cache-inmemory';
 
-const DEFAULT_ONE_GRAPH_URL = 'https://serve.onegraph.com/dynamic';
+import type {OneGraphAuth} from 'onegraph-auth';
+
+export type OneGraphApolloClientConfig = {
+  oneGraphAuth: OneGraphAuth,
+};
 
 function validateConfig(config) {
-  if (!config.appId) {
+  if (!config.oneGraphAuth) {
     throw new Error(
-      'createApolloClient was called with invalid config: missing appId'
+      'createApolloClient was called with invalid config: missing oneGraphAuth',
     );
   }
 }
 
 class OneGraphApolloClient extends ApolloClient {
-  constructor(config) {
+  constructor(config: OneGraphApolloClientConfig) {
     validateConfig(config);
-    const uri = new URL(config.oneGraphUrl || DEFAULT_ONE_GRAPH_URL);
-    uri.searchParams.append('app_id', config.appId);
-    super({
-      link: new HttpLink({
-        uri,
+    const {oneGraphAuth} = config;
+    const uri = new URL(oneGraphAuth.oneGraphOrigin);
+    uri.pathname = '/dynamic';
+    uri.searchParams.append('app_id', oneGraphAuth.appId);
+    const httpLink = new HttpLink({uri});
+    const authMiddlewareLink = new ApolloLink((operation, forward) => {
+      operation.setContext({
         headers: {
           'Content-Type': 'application/json',
+          Accept: 'application/json',
+          ...config.oneGraphAuth.authHeaders(),
         },
-        credentials: 'include',
-      }),
+      });
+      return forward(operation);
+    });
+    super({
+      link: authMiddlewareLink.concat(httpLink),
       cache: new InMemoryCache(),
-      dataIdFromObject: object => `${object.__typename}-${object.id}`,
       ...config,
     });
   }
