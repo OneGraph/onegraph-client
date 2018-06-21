@@ -10,6 +10,7 @@ export type Service =
   | 'eventil'
   | 'github'
   | 'google'
+  | 'salesforce'
   | 'stripe'
   | 'twilio'
   | 'twitter'
@@ -50,6 +51,8 @@ function friendlyServiceName(service: Service): string {
       return 'Google';
     case 'github':
       return 'GitHub';
+    case 'salesforce':
+      return 'Salesforce';
     case 'stripe':
       return 'Stripe';
     case 'twilio':
@@ -128,6 +131,8 @@ function loggedInQuery(service: Service): string {
       return 'query { me { google { sub }}}';
     case 'github':
       return 'query { me { github { id }}}';
+    case 'salesforce':
+      return 'query { me { salesforce { sub }}}';
     case 'stripe':
       return 'query { me { stripe { id }}}';
     case 'twilio':
@@ -150,6 +155,8 @@ function getIsLoggedIn(queryResult: Object, service: Service): boolean {
       return !!idx(queryResult, _ => _.data.me.google.sub);
     case 'github':
       return !!idx(queryResult, _ => _.data.me.github.id);
+    case 'salesforce':
+      return !!idx(queryResult, _ => _.data.me.salesforce.sub);
     case 'stripe':
       return !!idx(queryResult, _ => _.data.me.stripe.id);
     case 'twilio':
@@ -177,6 +184,9 @@ function logoutMutation(service: Service): string {
         }
         github {
           id
+        }
+        salesforce {
+          sub
         }
         stripe {
           id
