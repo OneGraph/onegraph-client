@@ -14,6 +14,7 @@ export type Service =
   | 'stripe'
   | 'twilio'
   | 'twitter'
+  | 'youtube'
   | 'zendesk';
 
 export type Opts = {
@@ -59,6 +60,8 @@ function friendlyServiceName(service: Service): string {
       return 'Twilio';
     case 'twitter':
       return 'Twitter';
+    case 'youtube':
+      return 'YouTube';
     case 'zendesk':
       return 'Zendesk';
     default:
@@ -139,6 +142,8 @@ function loggedInQuery(service: Service): string {
       return 'query { me { twilio { id }}}';
     case 'twitter':
       return 'query { me { twitter { id }}}';
+    case 'youtube':
+      return 'query { me { youTube { sub }}}';
     case 'zendesk':
       return 'query { me { zendesk { id }}}';
     default:
@@ -163,6 +168,8 @@ function getIsLoggedIn(queryResult: Object, service: Service): boolean {
       return !!idx(queryResult, _ => _.data.me.twilio.id);
     case 'twitter':
       return !!idx(queryResult, _ => _.data.me.twitter.id);
+    case 'youtube':
+      return !!idx(queryResult, _ => _.data.me.youTube.sub);
     case 'zendesk':
       return !!idx(queryResult, _ => _.data.me.zendesk.id);
     default:
@@ -196,6 +203,9 @@ function logoutMutation(service: Service): string {
         }
         twitter {
           id
+        }
+        youTube {
+          sub
         }
         zendesk {
           id
