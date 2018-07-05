@@ -9,7 +9,10 @@ import type {Storage} from './storage';
 export type Service =
   | 'eventil'
   | 'github'
+  | 'gmail'
   | 'google'
+  | 'google-compute'
+  | 'google-docs'
   | 'salesforce'
   | 'stripe'
   | 'twilio'
@@ -48,10 +51,16 @@ function friendlyServiceName(service: Service): string {
   switch (service) {
     case 'eventil':
       return 'Eventil';
-    case 'google':
-      return 'Google';
     case 'github':
       return 'GitHub';
+    case 'gmail':
+      return 'Gmail';
+    case 'google':
+      return 'Google';
+    case 'google-compute':
+      return 'Google Compute';
+    case 'google-docs':
+      return 'Google Docs';
     case 'salesforce':
       return 'Salesforce';
     case 'stripe':
@@ -130,10 +139,16 @@ function loggedInQuery(service: Service): string {
   switch (service) {
     case 'eventil':
       return 'query { me { eventil { id }}}';
-    case 'google':
-      return 'query { me { google { sub }}}';
     case 'github':
       return 'query { me { github { id }}}';
+    case 'gmail':
+      return 'query { me { gmail { sub }}}';
+    case 'google':
+      return 'query { me { google { sub }}}';
+    case 'google-compute':
+      return 'query { me { googleCompute { sub }}}';
+    case 'google-docs':
+      return 'query { me { googleDocs { sub }}}';
     case 'salesforce':
       return 'query { me { salesforce { sub }}}';
     case 'stripe':
@@ -156,10 +171,16 @@ function getIsLoggedIn(queryResult: Object, service: Service): boolean {
   switch (service) {
     case 'eventil':
       return !!idx(queryResult, _ => _.data.me.eventil.id);
-    case 'google':
-      return !!idx(queryResult, _ => _.data.me.google.sub);
     case 'github':
       return !!idx(queryResult, _ => _.data.me.github.id);
+    case 'gmail':
+      return !!idx(queryResult, _ => _.data.me.gmail.sub);
+    case 'google':
+      return !!idx(queryResult, _ => _.data.me.google.sub);
+    case 'google-compute':
+      return !!idx(queryResult, _ => _.data.me.googleCompute.sub);
+    case 'google-docs':
+      return !!idx(queryResult, _ => _.data.me.googleDocs.sub);
     case 'salesforce':
       return !!idx(queryResult, _ => _.data.me.salesforce.sub);
     case 'stripe':
@@ -186,11 +207,20 @@ function logoutMutation(service: Service): string {
         eventil {
           id
         }
+        github {
+          id
+        }
+        gmail {
+          sub
+        }
         google {
           sub
         }
-        github {
-          id
+        googleCompute {
+          sub
+        }
+        googleDocs {
+          sub
         }
         salesforce {
           sub
