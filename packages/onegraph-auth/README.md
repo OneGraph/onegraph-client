@@ -2,10 +2,15 @@
 
 ### Supported services
 
-- Eventil
-- GitHub
-- Google
-- Stripe
-- Twilio
-- Twitter
-- Zendesk
+  - eventil
+  - github
+  - gmail
+  - google
+  - google-compute
+  - google-docs
+  - salesforce
+  - stripe
+  - twilio
+  - twitter
+  - youtube
+  - zendesk
