@@ -2,6 +2,7 @@
 
 import OAuthError from './oauthError';
 import {hasLocalStorage, InMemoryStorage, LocalStorage} from './storage';
+import URI from './uri';
 const idx = require('idx');
 
 import type {Storage} from './storage';
@@ -109,10 +110,11 @@ function createAuthWindow(
   stateParam: StateParam,
 ): Window {
   const windowOpts = getWindowOpts();
-  const authUrl = new URL(authUrlString);
-  authUrl.searchParams.set('state', stateParam);
+  const authUrl = URI.addQueryParams(URI.parse(authUrlString), {
+    state: stateParam,
+  });
   return window.open(
-    authUrl.toString(),
+    URI.toString(authUrl),
     `Log in with ${friendlyServiceName(service)}`,
     Object.keys(windowOpts)
       .map(k => `${k}=${windowOpts[k]}`)
@@ -123,16 +125,13 @@ function createAuthWindow(
 // Cycles path through URL.origin to ensure that it's the same format we'll
 // see in the auth window's location
 function normalizeRedirectOrigin(origin: string): string {
-  return new URL(origin).origin;
+  return URI.parse(origin).origin;
 }
 
 // Cycles path through URL.pathname to ensure that it's the same format we'll
 // see in the auth window's location
 function normalizeRedirectPath(path: string): string {
-  const u = new URL('https://example.com');
-  u.pathname = path;
-  const pathname = u.pathname;
-  return pathname === '/' ? '' : pathname;
+  return path === '/' ? '' : path;
 }
 
 function loggedInQuery(service: Service): string {
@@ -269,18 +268,22 @@ function exchangeCode(
   code: string,
   token?: ?Token,
 ): Promise<Object> {
-  const url = new URL(oneGraphOrigin);
-  url.pathname = '/oauth/code';
-  url.searchParams.set('app_id', appId);
   const redirectUri = redirectOrigin + redirectPath;
-  url.searchParams.set('redirect_uri', redirectUri);
-  url.searchParams.set('code', code);
+  const url = URI.make({
+    origin: oneGraphOrigin,
+    path: '/oauth/code',
+    query: {
+      app_id: appId,
+      redirect_uri: redirectUri,
+      code,
+    },
+  });
   const headers = {
     'Content-Type': 'application/json',
     Accept: 'application/json',
     ...(token ? {Authentication: `Bearer ${token.accessToken}`} : {}),
   };
-  return fetch(url.toString(), {
+  return fetch(URI.toString(url), {
     method: 'POST',
     headers,
   }).then(response => response.json());
@@ -345,10 +348,12 @@ class OneGraphAuth {
       oauthFinishPath || window.location.pathname,
     );
 
-    const fetchUrl = new URL(opts.oneGraphOrigin || DEFAULT_ONEGRAPH_ORIGIN);
-    fetchUrl.pathname = '/dynamic';
-    fetchUrl.searchParams.set('app_id', appId);
-    this._fetchUrl = fetchUrl.toString();
+    const fetchUrl = URI.make({
+      origin: opts.oneGraphOrigin || DEFAULT_ONEGRAPH_ORIGIN,
+      path: '/dynamic',
+      query: {app_id: appId},
+    });
+    this._fetchUrl = URI.toString(fetchUrl);
     this._storage =
       opts.storage || hasLocalStorage()
         ? new LocalStorage()
@@ -388,14 +393,18 @@ class OneGraphAuth {
   }
 
   _makeAuthUrl = (service: Service): string => {
-    const authUrl = new URL(this.oneGraphOrigin);
-    authUrl.pathname = '/oauth/start';
-    authUrl.searchParams.set('service', service);
-    authUrl.searchParams.set('app_id', this.appId);
-    authUrl.searchParams.set('response_type', 'code');
-    authUrl.searchParams.set('redirect_origin', this._redirectOrigin);
-    authUrl.searchParams.set('redirect_path', this._redirectPath);
-    return authUrl.toString();
+    const authUrl = URI.make({
+      origin: this.oneGraphOrigin,
+      path: '/oauth/start',
+      query: {
+        service,
+        app_id: this.appId,
+        response_type: 'code',
+        redirect_origin: this._redirectOrigin,
+        redirect_path: this._redirectPath,
+      },
+    });
+    return URI.toString(authUrl);
   };
 
   _setToken = (token: Token) => {
@@ -412,8 +421,8 @@ class OneGraphAuth {
         try {
           const authLocation = this._authWindows[service].location;
           if (authLocation.origin === this._redirectOrigin) {
-            const params = new URL(authLocation).searchParams;
-            if (stateParam !== params.get('state')) {
+            const params = URI.parse(authLocation.href).query;
+            if (stateParam !== params.state) {
               reject(
                 new OAuthError({
                   error: 'invalid_request',
@@ -421,7 +430,7 @@ class OneGraphAuth {
                 }),
               );
             } else {
-              const code = params.get('code');
+              const code = params.code;
               if (!code) {
                 reject(
                   new OAuthError({
