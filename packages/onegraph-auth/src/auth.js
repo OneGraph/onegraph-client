@@ -199,7 +199,7 @@ function getIsLoggedIn(queryResult: Object, service: Service): boolean {
 }
 
 function logoutMutation(service: Service): string {
-  const serviceEnum = service.toUpperCase();
+  const serviceEnum = service.toUpperCase().replace(/-/, '_');
   return `mutation {
     signoutServices(data: {services: [${serviceEnum}]}) {
       me {
