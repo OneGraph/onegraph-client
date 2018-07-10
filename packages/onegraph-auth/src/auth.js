@@ -518,8 +518,15 @@ class OneGraphAuth {
         logoutMutation(service),
         accessToken,
       ).then(result => {
-        const loggedIn = getIsLoggedIn({data: result.signoutServices}, service);
-        return {result: loggedIn ? 'failure' : 'success'};
+        if (result.errors && result.errors.length) {
+          return {result: 'failure', errors: result.errors};
+        } else {
+          const loggedIn = getIsLoggedIn(
+            {data: result.signoutServices},
+            service,
+          );
+          return {result: loggedIn ? 'failure' : 'success'};
+        }
       });
     } else {
       return Promise.resolve({result: 'failure'});
