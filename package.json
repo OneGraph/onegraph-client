@@ -9,6 +9,7 @@
     "clean": "lerna run -- clean",
     "build": "lerna run -- build",
     "deploy": "yarn run clean && yarn run build && lerna publish",
+    "force-deploy": "yarn run clean && yarn run build && lerna publish --force-publish $(ls packages/)",
     "flow": "flow"
   },
   "devDependencies": {
