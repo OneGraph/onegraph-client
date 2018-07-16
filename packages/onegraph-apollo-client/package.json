@@ -2,6 +2,7 @@
   "name": "onegraph-apollo-client",
   "version": "0.2.7",
   "description": "Apollo Client for OneGraph",
+  "homepage": "https://github.com/OneGraph/onegraph-client/tree/master/packages/onegraph-apollo-client",
   "main": "dist/bundle.umd.js",
   "module": "dist/bundle.es.js",
   "license": "MIT",
