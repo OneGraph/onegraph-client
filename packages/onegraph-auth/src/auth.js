@@ -14,6 +14,7 @@ export type Service =
   | 'google'
   | 'google-compute'
   | 'google-docs'
+  | 'intercom'
   | 'salesforce'
   | 'stripe'
   | 'twilio'
@@ -62,6 +63,8 @@ function friendlyServiceName(service: Service): string {
       return 'Google Compute';
     case 'google-docs':
       return 'Google Docs';
+    case 'intercom':
+      return 'Intercom';
     case 'salesforce':
       return 'Salesforce';
     case 'stripe':
@@ -148,6 +151,8 @@ function loggedInQuery(service: Service): string {
       return 'query { me { googleCompute { sub }}}';
     case 'google-docs':
       return 'query { me { googleDocs { sub }}}';
+    case 'intercom':
+      return 'query { me { intercom { id }}}';
     case 'salesforce':
       return 'query { me { salesforce { sub }}}';
     case 'stripe':
@@ -180,6 +185,8 @@ function getIsLoggedIn(queryResult: Object, service: Service): boolean {
       return !!idx(queryResult, _ => _.data.me.googleCompute.sub);
     case 'google-docs':
       return !!idx(queryResult, _ => _.data.me.googleDocs.sub);
+    case 'intercom':
+      return !!idx(queryResult, _ => _.data.me.intercom.id);
     case 'salesforce':
       return !!idx(queryResult, _ => _.data.me.salesforce.sub);
     case 'stripe':
@@ -220,6 +227,9 @@ function logoutMutation(service: Service): string {
         }
         googleDocs {
           sub
+        }
+        intercom {
+          id
         }
         salesforce {
           sub
