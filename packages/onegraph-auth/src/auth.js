@@ -15,6 +15,7 @@ export type Service =
   | 'google-compute'
   | 'google-docs'
   | 'google-translate'
+  | 'hubspot'
   | 'intercom'
   | 'salesforce'
   | 'slack'
@@ -67,6 +68,8 @@ function friendlyServiceName(service: Service): string {
       return 'Google Docs';
     case 'google-translate':
       return 'Google Translate';
+    case 'hubspot':
+      return 'HubSpot';
     case 'intercom':
       return 'Intercom';
     case 'salesforce':
@@ -161,6 +164,8 @@ function loggedInQuery(service: Service): string {
       return 'query { me { googleDocs { sub }}}';
     case 'google-translate':
       return 'query { me { googleTranslate { sub }}}';
+    case 'hubspot':
+      return 'query { me { hubspot { userId }}}';
     case 'intercom':
       return 'query { me { intercom { id }}}';
     case 'salesforce':
@@ -201,6 +206,8 @@ function getIsLoggedIn(queryResult: Object, service: Service): boolean {
       return !!idx(queryResult, _ => _.data.me.googleTranslate.sub);
     case 'intercom':
       return !!idx(queryResult, _ => _.data.me.intercom.id);
+    case 'hubspot':
+      return !!idx(queryResult, _ => _.data.me.hubspot.userId);
     case 'salesforce':
       return !!idx(queryResult, _ => _.data.me.salesforce.sub);
     case 'slack':
@@ -246,6 +253,8 @@ function logoutMutation(service: Service): string {
         }
         googleTranslate {
           sub
+        hubspot {
+          userId
         }
         intercom {
           id
