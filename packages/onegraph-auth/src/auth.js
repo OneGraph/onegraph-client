@@ -120,15 +120,10 @@ function createAuthWindow(
   scopes: ?Array<string>,
 ): Window {
   const windowOpts = getWindowOpts();
-  const authUrl = URI.addQueryParams(
-    URI.parse(authUrlString),
-    Object.assign(
-      {
-        state: stateParam,
-      },
-      !!scopes ? {scopes: scopes.join(',')} : {},
-    ),
-  );
+  const authUrl = URI.addQueryParams(URI.parse(authUrlString), {
+    state: stateParam,
+    ...(scopes ? {scopes: scopes.join(',')} : {}),
+  });
   return window.open(
     URI.toString(authUrl),
     `Log in with ${friendlyServiceName(service)}`,
