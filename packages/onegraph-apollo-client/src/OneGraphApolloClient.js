@@ -1,9 +1,6 @@
 //@flow
 
-import {ApolloClient} from 'apollo-client';
-import {HttpLink} from 'apollo-link-http';
-import {ApolloLink} from 'apollo-link';
-import {InMemoryCache} from 'apollo-cache-inmemory';
+import ApolloClient from 'apollo-boost';
 
 import type {OneGraphAuth} from 'onegraph-auth';
 
@@ -26,20 +23,10 @@ class OneGraphApolloClient extends ApolloClient {
     const uri = new URL(oneGraphAuth.oneGraphOrigin);
     uri.pathname = '/dynamic';
     uri.searchParams.append('app_id', oneGraphAuth.appId);
-    const httpLink = new HttpLink({uri});
-    const authMiddlewareLink = new ApolloLink((operation, forward) => {
-      operation.setContext({
-        headers: {
-          'Content-Type': 'application/json',
-          Accept: 'application/json',
-          ...config.oneGraphAuth.authHeaders(),
-        },
-      });
-      return forward(operation);
-    });
+
     super({
-      link: authMiddlewareLink.concat(httpLink),
-      cache: new InMemoryCache(),
+      uri: uri.toString(),
+      request: operation => operation.setContext({headers: oneGraphAuth.authHeaders()}),
       ...config,
     });
   }
