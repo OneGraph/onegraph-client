@@ -14,8 +14,10 @@ export type Service =
   | 'google'
   | 'google-compute'
   | 'google-docs'
+  | 'google-translate'
   | 'intercom'
   | 'salesforce'
+  | 'slack'
   | 'stripe'
   | 'twilio'
   | 'twitter'
@@ -63,10 +65,14 @@ function friendlyServiceName(service: Service): string {
       return 'Google Compute';
     case 'google-docs':
       return 'Google Docs';
+    case 'google-translate':
+      return 'Google Translate';
     case 'intercom':
       return 'Intercom';
     case 'salesforce':
       return 'Salesforce';
+    case 'slack':
+      return 'Slack';
     case 'stripe':
       return 'Stripe';
     case 'twilio':
@@ -111,10 +117,12 @@ function createAuthWindow(
   authUrlString: string,
   service: Service,
   stateParam: StateParam,
+  scopes: ?Array<string>,
 ): Window {
   const windowOpts = getWindowOpts();
   const authUrl = URI.addQueryParams(URI.parse(authUrlString), {
     state: stateParam,
+    ...(scopes ? {scopes: scopes.join(',')} : {}),
   });
   return window.open(
     URI.toString(authUrl),
@@ -151,10 +159,14 @@ function loggedInQuery(service: Service): string {
       return 'query { me { googleCompute { sub }}}';
     case 'google-docs':
       return 'query { me { googleDocs { sub }}}';
+    case 'google-translate':
+      return 'query { me { googleTranslate { sub }}}';
     case 'intercom':
       return 'query { me { intercom { id }}}';
     case 'salesforce':
       return 'query { me { salesforce { sub }}}';
+    case 'slack':
+      return 'query { me { slack { id }}}';
     case 'stripe':
       return 'query { me { stripe { id }}}';
     case 'twilio':
@@ -185,10 +197,14 @@ function getIsLoggedIn(queryResult: Object, service: Service): boolean {
       return !!idx(queryResult, _ => _.data.me.googleCompute.sub);
     case 'google-docs':
       return !!idx(queryResult, _ => _.data.me.googleDocs.sub);
+    case 'google-translate':
+      return !!idx(queryResult, _ => _.data.me.googleTranslate.sub);
     case 'intercom':
       return !!idx(queryResult, _ => _.data.me.intercom.id);
     case 'salesforce':
       return !!idx(queryResult, _ => _.data.me.salesforce.sub);
+    case 'slack':
+      return !!idx(queryResult, _ => _.data.me.slack.id);
     case 'stripe':
       return !!idx(queryResult, _ => _.data.me.stripe.id);
     case 'twilio':
@@ -228,11 +244,17 @@ function logoutMutation(service: Service): string {
         googleDocs {
           sub
         }
+        googleTranslate {
+          sub
+        }
         intercom {
           id
         }
         salesforce {
           sub
+        }
+        slack {
+          id
         }
         stripe {
           id
@@ -495,13 +517,14 @@ class OneGraphAuth {
     });
   };
 
-  login = (service: Service): Promise<AuthResponse> => {
+  login = (service: Service, scopes: ?Array<string>): Promise<AuthResponse> => {
     this.cleanup(service);
     const stateParam = makeStateParam();
     this._authWindows[service] = createAuthWindow(
       this._makeAuthUrl(service),
       service,
       stateParam,
+      scopes,
     );
     return this._waitForAuthFinish(service, stateParam);
   };
