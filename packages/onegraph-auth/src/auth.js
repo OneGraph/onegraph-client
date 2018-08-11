@@ -44,6 +44,14 @@ type Token = {
   expireDate: number,
 };
 
+export type ServiceStatus = {
+  isLoggedIn: boolean,
+};
+
+export type ServicesStatus = {
+  [service: Service]: ServiceStatus,
+};
+
 export type AuthResponse = {token: Token};
 
 type Window = any;
@@ -51,6 +59,25 @@ type Window = any;
 type StateParam = string;
 
 const POLL_INTERVAL = 35;
+
+const ALL_SERVICES = [
+  'eventil',
+  'github',
+  'gmail',
+  'google',
+  'google-compute',
+  'google-docs',
+  'google-translate',
+  'hubspot',
+  'intercom',
+  'salesforce',
+  'slack',
+  'stripe',
+  'twilio',
+  'twitter',
+  'youtube',
+  'zendesk',
+];
 
 function friendlyServiceName(service: Service): string {
   switch (service) {
@@ -228,59 +255,70 @@ function getIsLoggedIn(queryResult: Object, service: Service): boolean {
   }
 }
 
+// Don't support fragments for gql services, yet.
+const ME_PSUEDO_FRAGMENT = `
+me {
+  eventil {
+    id
+  }
+  github {
+    id
+  }
+  gmail {
+    sub
+  }
+  google {
+    sub
+  }
+  googleCompute {
+    sub
+  }
+  googleDocs {
+    sub
+  }
+  googleTranslate {
+    sub
+  }
+  hubspot {
+    userId
+  }
+  intercom {
+    id
+  }
+  salesforce {
+    sub
+  }
+  slack {
+    id
+  }
+  stripe {
+    id
+  }
+  twilio {
+    id
+  }
+  twitter {
+    id
+  }
+  youTube {
+    sub
+  }
+  zendesk {
+    id
+  }
+}
+`;
+
+const ALL_SERVICES_QUERY = `
+{
+  ${ME_PSUEDO_FRAGMENT}
+}`;
+
 function logoutMutation(service: Service): string {
   const serviceEnum = service.toUpperCase().replace(/-/, '_');
   return `mutation {
     signoutServices(data: {services: [${serviceEnum}]}) {
-      me {
-        eventil {
-          id
-        }
-        github {
-          id
-        }
-        gmail {
-          sub
-        }
-        google {
-          sub
-        }
-        googleCompute {
-          sub
-        }
-        googleDocs {
-          sub
-        }
-        googleTranslate {
-          sub
-        hubspot {
-          userId
-        }
-        intercom {
-          id
-        }
-        salesforce {
-          sub
-        }
-        slack {
-          id
-        }
-        stripe {
-          id
-        }
-        twilio {
-          id
-        }
-        twitter {
-          id
-        }
-        youTube {
-          sub
-        }
-        zendesk {
-          id
-        }
-      }
+      ${ME_PSUEDO_FRAGMENT}
     }
   }`;
 }
@@ -374,6 +412,7 @@ class OneGraphAuth {
   appId: string;
   _storageKey: string;
   _storage: Storage;
+  supportedServices = ALL_SERVICES;
 
   constructor(opts: Opts) {
     const {appId, oauthFinishOrigin, oauthFinishPath} = opts;
@@ -548,6 +587,29 @@ class OneGraphAuth {
       ).then(result => getIsLoggedIn(result, service));
     } else {
       return Promise.resolve(false);
+    }
+  };
+
+  servicesStatus = (): Promise<ServicesStatus> => {
+    const accessToken = this._accessToken;
+    if (accessToken) {
+      return fetchQuery(
+        this._fetchUrl,
+        ALL_SERVICES_QUERY,
+        accessToken,
+      ).then(result =>
+        ALL_SERVICES.reduce((acc, service) => {
+          acc[service] = {isLoggedIn: getIsLoggedIn(result, service)};
+          return acc;
+        }, {}),
+      );
+    } else {
+      return Promise.resolve(
+        ALL_SERVICES.reduce((acc, service) => {
+          acc[service] = {isLoggedIn: false};
+          return acc;
+        }, {}),
+      );
     }
   };
 
