@@ -12,6 +12,7 @@ export type Service =
   | 'github'
   | 'gmail'
   | 'google'
+  | 'google-calendar'
   | 'google-compute'
   | 'google-docs'
   | 'google-translate'
@@ -65,6 +66,7 @@ const ALL_SERVICES = [
   'github',
   'gmail',
   'google',
+  'google-calendar',
   'google-compute',
   'google-docs',
   'google-translate',
@@ -89,6 +91,8 @@ function friendlyServiceName(service: Service): string {
       return 'Gmail';
     case 'google':
       return 'Google';
+    case 'google-calendar':
+      return 'Google Calendar';
     case 'google-compute':
       return 'Google Compute';
     case 'google-docs':
@@ -185,6 +189,8 @@ function loggedInQuery(service: Service): string {
       return 'query { me { gmail { sub }}}';
     case 'google':
       return 'query { me { google { sub }}}';
+    case 'google-calendar':
+      return 'query { me { googleCalendar { sub }}}';
     case 'google-compute':
       return 'query { me { googleCompute { sub }}}';
     case 'google-docs':
@@ -225,6 +231,8 @@ function getIsLoggedIn(queryResult: Object, service: Service): boolean {
       return !!idx(queryResult, _ => _.data.me.gmail.sub);
     case 'google':
       return !!idx(queryResult, _ => _.data.me.google.sub);
+    case 'google-calendar':
+      return !!idx(queryResult, _ => _.data.me.googleCalendar.sub);
     case 'google-compute':
       return !!idx(queryResult, _ => _.data.me.googleCompute.sub);
     case 'google-docs':
@@ -268,6 +276,9 @@ me {
     sub
   }
   google {
+    sub
+  }
+  googleCalendar {
     sub
   }
   googleCompute {
