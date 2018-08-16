@@ -24,6 +24,7 @@ export type Service =
   | 'twilio'
   | 'twitter'
   | 'youtube'
+  | 'zeit'
   | 'zendesk';
 
 export type Opts = {
@@ -78,6 +79,7 @@ const ALL_SERVICES = [
   'twilio',
   'twitter',
   'youtube',
+  'zeit',
   'zendesk',
 ];
 
@@ -115,6 +117,8 @@ function friendlyServiceName(service: Service): string {
       return 'Twitter';
     case 'youtube':
       return 'YouTube';
+    case 'zeit':
+      return 'Zeit';
     case 'zendesk':
       return 'Zendesk';
     default:
@@ -213,6 +217,8 @@ function loggedInQuery(service: Service): string {
       return 'query { me { twitter { id }}}';
     case 'youtube':
       return 'query { me { youTube { sub }}}';
+    case 'zeit':
+      return 'query { me { zeit { id }}}';
     case 'zendesk':
       return 'query { me { zendesk { id }}}';
     default:
@@ -255,6 +261,8 @@ function getIsLoggedIn(queryResult: Object, service: Service): boolean {
       return !!idx(queryResult, _ => _.data.me.twitter.id);
     case 'youtube':
       return !!idx(queryResult, _ => _.data.me.youTube.sub);
+    case 'zeit':
+      return !!idx(queryResult, _ => _.data.me.zeit.id);
     case 'zendesk':
       return !!idx(queryResult, _ => _.data.me.zendesk.id);
     default:
@@ -313,6 +321,9 @@ me {
   }
   youTube {
     sub
+  }
+  zeit {
+    id
   }
   zendesk {
     id
@@ -604,15 +615,12 @@ class OneGraphAuth {
   servicesStatus = (): Promise<ServicesStatus> => {
     const accessToken = this._accessToken;
     if (accessToken) {
-      return fetchQuery(
-        this._fetchUrl,
-        ALL_SERVICES_QUERY,
-        accessToken,
-      ).then(result =>
-        ALL_SERVICES.reduce((acc, service) => {
-          acc[service] = {isLoggedIn: getIsLoggedIn(result, service)};
-          return acc;
-        }, {}),
+      return fetchQuery(this._fetchUrl, ALL_SERVICES_QUERY, accessToken).then(
+        result =>
+          ALL_SERVICES.reduce((acc, service) => {
+            acc[service] = {isLoggedIn: getIsLoggedIn(result, service)};
+            return acc;
+          }, {}),
       );
     } else {
       return Promise.resolve(
