@@ -21,6 +21,7 @@ export type Service =
   | 'salesforce'
   | 'slack'
   | 'stripe'
+  | 'trello'
   | 'twilio'
   | 'twitter'
   | 'youtube'
@@ -76,6 +77,7 @@ const ALL_SERVICES = [
   'salesforce',
   'slack',
   'stripe',
+  'trello',
   'twilio',
   'twitter',
   'youtube',
@@ -111,6 +113,8 @@ function friendlyServiceName(service: Service): string {
       return 'Slack';
     case 'stripe':
       return 'Stripe';
+    case 'trello':
+      return 'Trello';
     case 'twilio':
       return 'Twilio';
     case 'twitter':
@@ -211,6 +215,8 @@ function loggedInQuery(service: Service): string {
       return 'query { me { slack { id }}}';
     case 'stripe':
       return 'query { me { stripe { id }}}';
+    case 'trello':
+      return 'query { me { trello { id }}}';
     case 'twilio':
       return 'query { me { twilio { id }}}';
     case 'twitter':
@@ -255,6 +261,8 @@ function getIsLoggedIn(queryResult: Object, service: Service): boolean {
       return !!idx(queryResult, _ => _.data.me.slack.id);
     case 'stripe':
       return !!idx(queryResult, _ => _.data.me.stripe.id);
+    case 'trello':
+      return !!idx(queryResult, _ => _.data.me.trello.id);
     case 'twilio':
       return !!idx(queryResult, _ => _.data.me.twilio.id);
     case 'twitter':
@@ -269,6 +277,12 @@ function getIsLoggedIn(queryResult: Object, service: Service): boolean {
       (service: empty); // exhaustive switch check from flow
       throw new Error('No such service ' + service);
   }
+}
+
+function getServiceErrors(errors, service) {
+  return errors.filter(
+    error => error.path && error.path.includes(service)
+  );
 }
 
 // Don't support fragments for gql services, yet.
@@ -311,6 +325,9 @@ me {
     id
   }
   stripe {
+    id
+  }
+  trello {
     id
   }
   twilio {
