@@ -1,4 +1,5 @@
 import OneGraphAuth from './auth';
+import {InMemoryStorage, LocalStorage} from './storage';
 
-export {OneGraphAuth};
+export {OneGraphAuth, InMemoryStorage, LocalStorage};
 export default OneGraphAuth;
