@@ -280,9 +280,7 @@ function getIsLoggedIn(queryResult: Object, service: Service): boolean {
 }
 
 function getServiceErrors(errors, service) {
-  return errors.filter(
-    error => error.path && error.path.includes(service)
-  );
+  return errors.filter(error => error.path && error.path.includes(service));
 }
 
 // Don't support fragments for gql services, yet.
@@ -474,9 +472,8 @@ class OneGraphAuth {
     });
     this._fetchUrl = URI.toString(fetchUrl);
     this._storage =
-      opts.storage || hasLocalStorage()
-        ? new LocalStorage()
-        : new InMemoryStorage();
+      opts.storage ||
+      (hasLocalStorage() ? new LocalStorage() : new InMemoryStorage());
     this._storageKey = this.appId;
     this._accessToken = tokenFromStorage(this._storage, this._storageKey);
   }
@@ -526,7 +523,7 @@ class OneGraphAuth {
     return URI.toString(authUrl);
   };
 
-  _setToken = (token: Token) => {
+  setToken = (token: Token) => {
     this._accessToken = token;
     this._storage.setItem(this._storageKey, JSON.stringify(token));
   };
@@ -577,7 +574,7 @@ class OneGraphAuth {
                         accessToken: response.access_token,
                         expireDate: Date.now() + response.expires_in * 1000,
                       };
-                      this._setToken(token);
+                      this.setToken(token);
                       resolve({token});
                     } else {
                       reject(new Error('Unexpected result from server'));
@@ -632,15 +629,12 @@ class OneGraphAuth {
   servicesStatus = (): Promise<ServicesStatus> => {
     const accessToken = this._accessToken;
     if (accessToken) {
-      return fetchQuery(
-        this._fetchUrl,
-        ALL_SERVICES_QUERY,
-        accessToken,
-      ).then(result =>
-        ALL_SERVICES.reduce((acc, service) => {
-          acc[service] = {isLoggedIn: getIsLoggedIn(result, service)};
-          return acc;
-        }, {}),
+      return fetchQuery(this._fetchUrl, ALL_SERVICES_QUERY, accessToken).then(
+        result =>
+          ALL_SERVICES.reduce((acc, service) => {
+            acc[service] = {isLoggedIn: getIsLoggedIn(result, service)};
+            return acc;
+          }, {}),
       );
     } else {
       return Promise.resolve(
@@ -661,7 +655,11 @@ class OneGraphAuth {
         logoutMutation(service),
         accessToken,
       ).then(result => {
-        if (result.errors && result.errors.length && getServiceErrors(result.errors).length) {
+        if (
+          result.errors &&
+          result.errors.length &&
+          getServiceErrors(result.errors).length
+        ) {
           return {result: 'failure', errors: result.errors};
         } else {
           const loggedIn = getIsLoggedIn(
