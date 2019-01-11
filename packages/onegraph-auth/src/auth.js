@@ -25,6 +25,7 @@ export type Service =
   | 'twilio'
   | 'twitter'
   | 'youtube'
+  | 'vimeo'
   | 'zeit'
   | 'zendesk';
 
@@ -81,6 +82,7 @@ const ALL_SERVICES = [
   'twilio',
   'twitter',
   'youtube',
+  'vimeo',
   'zeit',
   'zendesk',
 ];
@@ -121,6 +123,8 @@ function friendlyServiceName(service: Service): string {
       return 'Twitter';
     case 'youtube':
       return 'YouTube';
+    case 'vimeo':
+      return 'Vimeo';
     case 'zeit':
       return 'Zeit';
     case 'zendesk':
@@ -223,6 +227,8 @@ function loggedInQuery(service: Service): string {
       return 'query { me { twitter { id }}}';
     case 'youtube':
       return 'query { me { youTube { sub }}}';
+    case 'vimeo':
+      return 'query { me { vimeo { id }}}';
     case 'zeit':
       return 'query { me { zeit { id }}}';
     case 'zendesk':
@@ -269,6 +275,8 @@ function getIsLoggedIn(queryResult: Object, service: Service): boolean {
       return !!idx(queryResult, _ => _.data.me.twitter.id);
     case 'youtube':
       return !!idx(queryResult, _ => _.data.me.youTube.sub);
+    case 'vimeo':
+      return !!idx(queryResult, _ => _.data.me.vimeo.id);
     case 'zeit':
       return !!idx(queryResult, _ => _.data.me.zeit.id);
     case 'zendesk':
@@ -336,6 +344,9 @@ me {
   }
   youTube {
     sub
+  }
+  vimeo {
+    id
   }
   zeit {
     id
