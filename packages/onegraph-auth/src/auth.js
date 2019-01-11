@@ -20,6 +20,8 @@ export type Service =
   | 'intercom'
   | 'salesforce'
   | 'slack'
+  | 'spotify'
+  | 'stack-exchange'
   | 'stripe'
   | 'trello'
   | 'twilio'
@@ -76,6 +78,8 @@ const ALL_SERVICES = [
   'intercom',
   'salesforce',
   'slack',
+  'spotify',
+  'stack-exchange',
   'stripe',
   'trello',
   'twilio',
@@ -111,6 +115,10 @@ function friendlyServiceName(service: Service): string {
       return 'Salesforce';
     case 'slack':
       return 'Slack';
+    case 'spotify':
+      return 'Spotify';
+    case 'stack-exchange':
+      return 'StackExchange';
     case 'stripe':
       return 'Stripe';
     case 'trello':
@@ -213,6 +221,10 @@ function loggedInQuery(service: Service): string {
       return 'query { me { salesforce { sub }}}';
     case 'slack':
       return 'query { me { slack { id }}}';
+    case 'spotify':
+      return 'query { me { spotify { id }}}';
+    case 'stack-exchange':
+      return 'query { me { stackExchange(site: "stackoverflow") { userId }}}';
     case 'stripe':
       return 'query { me { stripe { id }}}';
     case 'trello':
@@ -259,6 +271,10 @@ function getIsLoggedIn(queryResult: Object, service: Service): boolean {
       return !!idx(queryResult, _ => _.data.me.salesforce.sub);
     case 'slack':
       return !!idx(queryResult, _ => _.data.me.slack.id);
+    case 'spotify':
+      return !!idx(queryResult, _ => _.data.me.spotify.id);
+    case 'stack-exchange':
+      return !!idx(queryResult, _ => _.data.me.stackExchange.userId);
     case 'stripe':
       return !!idx(queryResult, _ => _.data.me.stripe.id);
     case 'trello':
@@ -321,6 +337,12 @@ me {
   }
   slack {
     id
+  }
+  spotify {
+    id
+  }
+  stackExchange(site: "stackoverflow") {
+    userId
   }
   stripe {
     id
