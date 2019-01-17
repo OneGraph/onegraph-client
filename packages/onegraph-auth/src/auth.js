@@ -20,6 +20,7 @@ export type Service =
   | 'intercom'
   | 'salesforce'
   | 'slack'
+  | 'spotify'
   | 'stripe'
   | 'trello'
   | 'twilio'
@@ -76,6 +77,7 @@ const ALL_SERVICES = [
   'intercom',
   'salesforce',
   'slack',
+  'spotify',
   'stripe',
   'trello',
   'twilio',
@@ -111,6 +113,8 @@ function friendlyServiceName(service: Service): string {
       return 'Salesforce';
     case 'slack':
       return 'Slack';
+    case 'spotify':
+      return 'Spotify';
     case 'stripe':
       return 'Stripe';
     case 'trello':
@@ -213,6 +217,8 @@ function loggedInQuery(service: Service): string {
       return 'query { me { salesforce { sub }}}';
     case 'slack':
       return 'query { me { slack { id }}}';
+    case 'spotify':
+      return 'query { me { spotify { id }}}';
     case 'stripe':
       return 'query { me { stripe { id }}}';
     case 'trello':
@@ -259,6 +265,8 @@ function getIsLoggedIn(queryResult: Object, service: Service): boolean {
       return !!idx(queryResult, _ => _.data.me.salesforce.sub);
     case 'slack':
       return !!idx(queryResult, _ => _.data.me.slack.id);
+    case 'spotify':
+      return !!idx(queryResult, _ => _.data.me.spotify.id);
     case 'stripe':
       return !!idx(queryResult, _ => _.data.me.stripe.id);
     case 'trello':
@@ -320,6 +328,9 @@ me {
     sub
   }
   slack {
+    id
+  }
+  spotify {
     id
   }
   stripe {
