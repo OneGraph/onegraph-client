@@ -1,34 +1,18 @@
 {
   "name": "react-onegraph",
   "description": "React bindings for OneGraph",
-  "version": "1.0.0",
-  "module": "es/index.js",
-  "jsnext:main": "es/index.js",
-  "main": "lib/index.js",
-  "repository": "https://github.com/rofrischmann/react-onegraph/",
-  "keywords": [
-    "onegraph",
-    "react",
-    "bindings",
-    "graphql",
-    "auth",
-    "oauth"
-  ],
-  "files": [
-    "LICENSE",
-    "README.md",
-    "lib/",
-    "es/"
-  ],
+  "version": "0.2.18",
+  "module": "dist/bundle.es.js",
+  "main": "dist/bundle.umd.js",
+  "repository": "https://github.com/onegraph/onegraph-client/tree/master/packages/react-onegraph",
+  "homepage": "https://github.com/OneGraph/onegraph-client/tree/master/packages/react-onegraph",
+  "keywords": ["onegraph", "react", "bindings", "graphql", "auth", "oauth"],
+  "license": "MIT",
   "scripts": {
-    "babel:es": "babel -d es src --ignore __tests__",
-    "babel:lib": "cross-env BABEL_ENV=commonjs babel -d lib src --ignore __tests__",
-    "babel": "yarn babel:es && yarn babel:lib",
-    "build": "yarn run check && yarn babel",
-    "check": "yarn clear && yarn format",
-    "clear": "rimraf lib es",
-    "format": "prettier --write \"./src/**/*.js\"",
-    "release": "yarn build && npm publish"
+    "prettier": "prettier --write \"src/**/*.js\"",
+    "build": "node build.js",
+    "clean": "mkdir -p dist && rm -r dist",
+    "flow": "flow"
   },
   "dependencies": {
     "onegraph-auth": "^0.2.18"

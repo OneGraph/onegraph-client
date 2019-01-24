@@ -30,7 +30,7 @@ To get started, we have to wrap our application with an **AuthProvider**. It man
 It takes only the OneGraph *appId* as props.
 
 ```javascript
-import { AuthProvider } from 'react-onegraph'
+import { AuthProvider } from 'react-onegraph'
 
 const APP_ID = /* OneGraph appId */
 
