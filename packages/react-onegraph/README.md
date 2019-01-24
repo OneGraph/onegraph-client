@@ -1,5 +1,3 @@
-> The repository was [moved to the official OneGraph organisation](https://github.com/OneGraph/onegraph-client/tree/master/packages/react-onegraph).
-
 # React Bindings for OneGraph's Authentication Client
 
 Useful React components for working with [OneGraph](http://onegraph.com/) and React.<br>
