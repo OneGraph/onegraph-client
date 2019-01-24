@@ -6,10 +6,12 @@ const rollup = require('rollup');
 async function buildForFormat(moduleName, format) {
   const bundle = await rollup.rollup({
     input: 'src/index.js',
+    external: ['react'],
     plugins: [
       resolve(),
       babel({
         exclude: 'node_modules/**',
+        presets: ['react', 'stage-0'],
       }),
       postcss({
         plugins: [],
@@ -23,6 +25,7 @@ async function buildForFormat(moduleName, format) {
     name: moduleName,
     exports: 'named',
     sourcemap: true,
+    globals: {react: 'React'},
   });
 }
 

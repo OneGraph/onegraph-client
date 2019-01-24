@@ -26,7 +26,8 @@ class OneGraphApolloClient extends ApolloClient {
 
     super({
       uri: uri.toString(),
-      request: operation => operation.setContext({headers: oneGraphAuth.authHeaders()}),
+      request: operation =>
+        operation.setContext({headers: oneGraphAuth.authHeaders()}),
       ...config,
     });
   }
