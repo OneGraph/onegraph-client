@@ -18,6 +18,7 @@
     "babel-preset-env": "^1.6.1",
     "babel-preset-es2015-rollup": "^3.0.0",
     "babel-preset-flow": "^6.23.0",
+    "babel-preset-react": "^6.5.0",
     "flow-bin": "^0.63.1",
     "prettier": "1.10.2",
     "rollup": "^0.54.0",
