@@ -1,12 +1,19 @@
 {
   "name": "react-onegraph",
   "description": "React bindings for OneGraph",
-  "version": "0.2.18",
+  "version": "1.2.21",
   "module": "dist/bundle.es.js",
   "main": "dist/bundle.umd.js",
   "repository": "https://github.com/onegraph/onegraph-client/tree/master/packages/react-onegraph",
   "homepage": "https://github.com/OneGraph/onegraph-client/tree/master/packages/react-onegraph",
-  "keywords": ["onegraph", "react", "bindings", "graphql", "auth", "oauth"],
+  "keywords": [
+    "onegraph",
+    "react",
+    "bindings",
+    "graphql",
+    "auth",
+    "oauth"
+  ],
   "license": "MIT",
   "scripts": {
     "prettier": "prettier --write \"src/**/*.js\"",
@@ -15,7 +22,7 @@
     "flow": "flow"
   },
   "dependencies": {
-    "onegraph-auth": "^0.2.18"
+    "onegraph-auth": "^1.2.21"
   },
   "peerDependencies": {
     "react": "^16.3.0"
