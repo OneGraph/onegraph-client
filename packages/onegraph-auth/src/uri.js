@@ -39,6 +39,14 @@ function parse(uriString: string): URI {
   };
 }
 
+function safeParse(uriString: string): ?URI {
+  try {
+    return parse(uriString);
+  } catch (e) {
+    return null;
+  }
+}
+
 function addQueryParams(uri: URI, query: Query): URI {
   return {
     ...uri,
@@ -77,4 +85,4 @@ function make({origin, path, query}: MakeArgs): URI {
   return uri;
 }
 
-export default {parse, addQueryParams, setPath, toString, make};
+export default {parse, safeParse, addQueryParams, setPath, toString, make};

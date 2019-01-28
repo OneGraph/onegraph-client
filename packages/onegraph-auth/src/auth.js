@@ -466,14 +466,15 @@ class OneGraphAuth {
     const {appId, oauthFinishOrigin, oauthFinishPath} = opts;
     this.oneGraphOrigin = opts.oneGraphOrigin || DEFAULT_ONEGRAPH_ORIGIN;
     this.appId = appId;
+    const windowUri = URI.parse(window.location.toString());
     this._redirectOrigin = normalizeRedirectOrigin(
-      oauthFinishOrigin || window.location.origin,
+      oauthFinishOrigin || windowUri.origin,
     );
-    if (this._redirectOrigin !== window.location.origin) {
+    if (this._redirectOrigin !== windowUri.origin) {
       console.warn('oauthFinishOrigin does not match window.location.origin');
     }
     this._redirectPath = normalizeRedirectPath(
-      oauthFinishPath || window.location.pathname,
+      oauthFinishPath || windowUri.path,
     );
 
     const fetchUrl = URI.make({
@@ -546,9 +547,11 @@ class OneGraphAuth {
     return new Promise((resolve, reject) => {
       this._intervalIds[service] = setInterval(() => {
         try {
-          const authLocation = this._authWindows[service].location;
-          if (authLocation.origin === this._redirectOrigin) {
-            const params = URI.parse(authLocation.href).query;
+          const authUri = URI.safeParse(
+            this._authWindows[service].location.toString(),
+          );
+          if (authUri && authUri.origin === this._redirectOrigin) {
+            const params = authUri.query;
             if (stateParam !== params.state) {
               reject(
                 new OAuthError({
