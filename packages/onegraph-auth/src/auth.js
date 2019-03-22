@@ -29,6 +29,8 @@ export type Service =
   | 'zeit'
   | 'zendesk';
 
+type CommunicationMode = 'post_message' | 'redirect';
+
 export type Opts = {
   oneGraphOrigin?: string,
   appId: string,
@@ -37,6 +39,7 @@ export type Opts = {
   oauthFinishPath?: string,
   saveAuthToStorage?: boolean,
   storage?: Storage,
+  communicationMode?: CommunicationMode,
 };
 
 export type LogoutResult = {
@@ -451,6 +454,7 @@ const DEFAULT_ONEGRAPH_ORIGIN = 'https://serve.onegraph.com';
 class OneGraphAuth {
   _authWindows: {[service: Service]: Window} = {};
   _intervalIds: {[service: Service]: IntervalID} = {};
+  _messageListeners: {[service: Service]: any} = {};
   _fetchUrl: string;
   _redirectOrigin: string;
   _redirectPath: string;
@@ -460,6 +464,7 @@ class OneGraphAuth {
   appId: string;
   _storageKey: string;
   _storage: Storage;
+  _communicationMode: CommunicationMode;
   supportedServices = ALL_SERVICES;
 
   constructor(opts: Opts) {
@@ -488,11 +493,17 @@ class OneGraphAuth {
       (hasLocalStorage() ? new LocalStorage() : new InMemoryStorage());
     this._storageKey = this.appId;
     this._accessToken = tokenFromStorage(this._storage, this._storageKey);
+    this._communicationMode = opts.communicationMode || 'redirect';
   }
 
   _clearInterval = (service: Service) => {
     clearInterval(this._intervalIds[service]);
     delete this._intervalIds[service];
+  };
+
+  _clearMessageListener = (service: Service) => {
+    window.removeEventListener('message', this._messageListeners[service]);
+    delete this._messageListeners[service];
   };
 
   _clearAuthWindow = (service: Service) => {
@@ -503,6 +514,7 @@ class OneGraphAuth {
 
   cleanup = (service: Service) => {
     this._clearInterval(service);
+    this._clearMessageListener(service);
     this._clearAuthWindow(service);
   };
 
@@ -530,6 +542,7 @@ class OneGraphAuth {
         response_type: 'code',
         redirect_origin: this._redirectOrigin,
         redirect_path: this._redirectPath,
+        communication_mode: this._communicationMode,
       },
     });
     return URI.toString(authUrl);
@@ -540,7 +553,74 @@ class OneGraphAuth {
     this._storage.setItem(this._storageKey, JSON.stringify(token));
   };
 
-  _waitForAuthFinish = (
+  _waitForAuthFinishPostMessage = (
+    service: Service,
+    stateParam: StateParam,
+  ): Promise<AuthResponse> => {
+    const postMessageOrigin = normalizeRedirectOrigin(this.oneGraphOrigin);
+    return new Promise((resolve, reject) => {
+      this._messageListeners[service] = window.addEventListener(
+        'message',
+        event => {
+          if (normalizeRedirectOrigin(event.origin) !== postMessageOrigin) {
+            console.warn(
+              'ignoring event for origin',
+              event.origin,
+              'expected',
+              postMessageOrigin,
+            );
+          } else {
+            const message = JSON.parse(event.data);
+            if (message && message.version === 1) {
+              const {code, state} = message;
+              if (state !== stateParam) {
+                console.warn('Invalid state param, skipping');
+              } else {
+                if (!code) {
+                  reject(
+                    new OAuthError({
+                      error: 'invalid_grant',
+                      error_description: 'Missing code',
+                    }),
+                  );
+                } else {
+                  exchangeCode(
+                    this.oneGraphOrigin,
+                    this.appId,
+                    this._redirectOrigin,
+                    this._redirectPath,
+                    code,
+                    this._accessToken,
+                  )
+                    .then(response => {
+                      if (response.error) {
+                        reject(new OAuthError(response));
+                      } else if (
+                        typeof response.access_token === 'string' &&
+                        typeof response.expires_in === 'number'
+                      ) {
+                        const token: Token = {
+                          accessToken: response.access_token,
+                          expireDate: Date.now() + response.expires_in * 1000,
+                        };
+                        this.setToken(token);
+                        resolve({token});
+                      } else {
+                        reject(new Error('Unexpected result from server'));
+                      }
+                    })
+                    .catch(e => reject(e));
+                }
+              }
+            }
+          }
+        },
+        false,
+      );
+    });
+  };
+
+  _waitForAuthFinishRedirect = (
     service: Service,
     stateParam: StateParam,
   ): Promise<AuthResponse> => {
@@ -597,7 +677,6 @@ class OneGraphAuth {
                   .catch(e => reject(e));
               }
             }
-            this.cleanup(service);
           }
         } catch (e) {
           if (e instanceof window.DOMException) {
@@ -607,7 +686,6 @@ class OneGraphAuth {
               'unexpected error waiting for auth to finish for ' + service,
               e,
             );
-            this.cleanup(service);
             reject(e);
           }
         }
@@ -624,7 +702,19 @@ class OneGraphAuth {
       stateParam,
       scopes,
     );
-    return this._waitForAuthFinish(service, stateParam);
+    const authFinish =
+      this._communicationMode === 'redirect'
+        ? this._waitForAuthFinishRedirect
+        : this._waitForAuthFinishPostMessage;
+    return authFinish(service, stateParam)
+      .then(result => {
+        this.cleanup(service);
+        return result;
+      })
+      .catch(e => {
+        this.cleanup(service);
+        throw e;
+      });
   };
 
   isLoggedIn = (service: Service): Promise<boolean> => {
