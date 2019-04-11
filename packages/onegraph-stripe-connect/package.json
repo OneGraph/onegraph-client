@@ -1,6 +1,6 @@
 {
   "name": "onegraph-stripe-connect",
-  "version": "1.2.23",
+  "version": "1.2.24",
   "description": "Stripe Connect button for OneGraph",
   "homepage": "https://github.com/OneGraph/onegraph-client/tree/master/packages/onegraph-stripe-connect",
   "main": "dist/bundle.umd.js",
@@ -39,6 +39,6 @@
     "jsxBracketSameLine": true
   },
   "dependencies": {
-    "onegraph-auth": "^1.2.23"
+    "onegraph-auth": "^1.2.24"
   }
 }
