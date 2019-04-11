@@ -8,6 +8,7 @@ const idx = require('idx');
 import type {Storage} from './storage';
 
 export type Service =
+  | 'dropbox'
   | 'eventil'
   | 'github'
   | 'gmail'
@@ -68,6 +69,7 @@ type StateParam = string;
 const POLL_INTERVAL = 35;
 
 const ALL_SERVICES = [
+  'dropbox',
   'eventil',
   'github',
   'gmail',
@@ -92,6 +94,8 @@ const ALL_SERVICES = [
 
 function friendlyServiceName(service: Service): string {
   switch (service) {
+    case 'dropbox':
+      return 'Dropbox';
     case 'eventil':
       return 'Eventil';
     case 'github':
@@ -196,6 +200,8 @@ function normalizeRedirectPath(path: string): string {
 
 function loggedInQuery(service: Service): string {
   switch (service) {
+    case 'dropbox':
+      return 'query { me { dropbox { accountId }}}';
     case 'eventil':
       return 'query { me { eventil { id }}}';
     case 'github':
@@ -244,6 +250,8 @@ function loggedInQuery(service: Service): string {
 
 function getIsLoggedIn(queryResult: Object, service: Service): boolean {
   switch (service) {
+    case 'dropbox':
+      return !!idx(queryResult, _ => _.data.me.dropbox.accountId);
     case 'eventil':
       return !!idx(queryResult, _ => _.data.me.eventil.id);
     case 'github':
@@ -297,6 +305,9 @@ function getServiceErrors(errors, service) {
 // Don't support fragments for gql services, yet.
 const ME_PSUEDO_FRAGMENT = `
 me {
+  dropbox {
+    accountId
+  }
   eventil {
     id
   }
