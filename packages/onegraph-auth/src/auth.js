@@ -9,6 +9,7 @@ import type {Storage} from './storage';
 
 export type Service =
   | 'box'
+  | 'dribbble'
   | 'dropbox'
   | 'eventil'
   | 'github'
@@ -71,6 +72,7 @@ const POLL_INTERVAL = 35;
 
 const ALL_SERVICES = [
   'box',
+  'dribbble',
   'dropbox',
   'eventil',
   'github',
@@ -98,6 +100,8 @@ function friendlyServiceName(service: Service): string {
   switch (service) {
     case 'box':
       return 'Box';
+    case 'dribbble':
+      return 'Dribbble';
     case 'dropbox':
       return 'Dropbox';
     case 'eventil':
@@ -206,6 +210,8 @@ function loggedInQuery(service: Service): string {
   switch (service) {
     case 'box':
       return 'query { me { box { id }}}';
+    case 'dribbble':
+      return 'query { me { dribbble { id }}}';
     case 'dropbox':
       return 'query { me { dropbox { accountId }}}';
     case 'eventil':
@@ -258,6 +264,8 @@ function getIsLoggedIn(queryResult: Object, service: Service): boolean {
   switch (service) {
     case 'box':
       return !!idx(queryResult, _ => _.data.me.box.id);
+    case 'dribbble':
+      return !!idx(queryResult, _ => _.data.me.dribbble.id);
     case 'dropbox':
       return !!idx(queryResult, _ => _.data.me.dropbox.accountId);
     case 'eventil':
@@ -315,6 +323,9 @@ const ME_PSUEDO_FRAGMENT = `
 me {
   box {
    id
+  }
+  dribbble {
+    id
   }
   dropbox {
     accountId
