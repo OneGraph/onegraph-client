@@ -21,6 +21,7 @@ export type Service =
   | 'google-translate'
   | 'hubspot'
   | 'intercom'
+  | 'quickbooks'
   | 'salesforce'
   | 'slack'
   | 'spotify'
@@ -84,6 +85,7 @@ const ALL_SERVICES = [
   'google-translate',
   'hubspot',
   'intercom',
+  'quickbooks',
   'salesforce',
   'slack',
   'spotify',
@@ -124,6 +126,8 @@ function friendlyServiceName(service: Service): string {
       return 'HubSpot';
     case 'intercom':
       return 'Intercom';
+    case 'quickbooks':
+      return 'Quickbooks';
     case 'salesforce':
       return 'Salesforce';
     case 'slack':
@@ -234,6 +238,8 @@ function loggedInQuery(service: Service): string {
       return 'query { me { hubspot { userId }}}';
     case 'intercom':
       return 'query { me { intercom { id }}}';
+    case 'quickbooks':
+      return 'query { me { serviceMetadata { quickbooks { isLoggedIn }}}}';
     case 'salesforce':
       return 'query { me { salesforce { sub }}}';
     case 'slack':
@@ -288,6 +294,11 @@ function getIsLoggedIn(queryResult: Object, service: Service): boolean {
       return !!idx(queryResult, _ => _.data.me.intercom.id);
     case 'hubspot':
       return !!idx(queryResult, _ => _.data.me.hubspot.userId);
+    case 'quickbooks':
+      return !!idx(
+        queryResult,
+        _ => _.data.me.serviceMetadata.quickbooks.isLoggedIn,
+      );
     case 'salesforce':
       return !!idx(queryResult, _ => _.data.me.salesforce.sub);
     case 'slack':
@@ -321,6 +332,11 @@ function getServiceErrors(errors, service) {
 // Don't support fragments for gql services, yet.
 const ME_PSUEDO_FRAGMENT = `
 me {
+  serviceMetadata {
+    quickbooks {
+      isLoggedIn
+    }
+  }
   box {
    id
   }
