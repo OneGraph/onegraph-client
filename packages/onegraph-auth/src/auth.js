@@ -12,6 +12,7 @@ export type Service =
   | 'dribbble'
   | 'dropbox'
   | 'eventil'
+  | 'facebook'
   | 'github'
   | 'gmail'
   | 'google'
@@ -76,6 +77,7 @@ const ALL_SERVICES = [
   'dribbble',
   'dropbox',
   'eventil',
+  'facebook',
   'github',
   'gmail',
   'google',
@@ -108,6 +110,8 @@ function friendlyServiceName(service: Service): string {
       return 'Dropbox';
     case 'eventil':
       return 'Eventil';
+    case 'facebook':
+      return 'Facebook';
     case 'github':
       return 'GitHub';
     case 'gmail':
@@ -220,6 +224,8 @@ function loggedInQuery(service: Service): string {
       return 'query { me { dropbox { accountId }}}';
     case 'eventil':
       return 'query { me { eventil { id }}}';
+    case 'facebook':
+      return 'query { me { serviceMetadata { facebook { isLoggedIn }}}}';
     case 'github':
       return 'query { me { github { id }}}';
     case 'gmail':
@@ -276,6 +282,11 @@ function getIsLoggedIn(queryResult: Object, service: Service): boolean {
       return !!idx(queryResult, _ => _.data.me.dropbox.accountId);
     case 'eventil':
       return !!idx(queryResult, _ => _.data.me.eventil.id);
+    case 'facebook':
+      return !!idx(
+        queryResult,
+        _ => _.data.me.serviceMetadata.facebook.isLoggedIn,
+      );
     case 'github':
       return !!idx(queryResult, _ => _.data.me.github.id);
     case 'gmail':
@@ -334,6 +345,9 @@ const ME_PSUEDO_FRAGMENT = `
 me {
   serviceMetadata {
     quickbooks {
+      isLoggedIn
+    }
+    facebook {
       isLoggedIn
     }
   }
