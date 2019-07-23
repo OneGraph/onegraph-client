@@ -3,6 +3,7 @@
 import OAuthError from './oauthError';
 import {hasLocalStorage, InMemoryStorage, LocalStorage} from './storage';
 import URI from './uri';
+// $FlowFixMe
 const idx = require('idx');
 
 import type {Storage} from './storage';
@@ -59,6 +60,21 @@ type Token = {
 export type ServiceStatus = {
   isLoggedIn: boolean,
 };
+
+export type LoggedInServices = {
+  [service: string]: {
+    serviceEnum: string,
+    foreignUserIds: Array<string>,
+  },
+};
+
+export type ServiceInfo = {
+  service: string,
+  serviceEnum: string,
+  friendlyServiceName: string,
+};
+
+export type ServicesList = Array<ServiceInfo>;
 
 export type ServicesStatus = {
   [service: Service]: ServiceStatus,
@@ -154,7 +170,7 @@ function friendlyServiceName(service: Service): string {
       return 'Zendesk';
     default:
       (service: empty); // exhaustive switch check from flow
-      throw new Error('No such service');
+      return service;
   }
 }
 
@@ -214,225 +230,70 @@ function normalizeRedirectPath(path: string): string {
   return path === '/' ? '' : path;
 }
 
-function loggedInQuery(service: Service): string {
-  switch (service) {
-    case 'box':
-      return 'query { me { box { id }}}';
-    case 'dribbble':
-      return 'query { me { dribbble { id }}}';
-    case 'dropbox':
-      return 'query { me { dropbox { accountId }}}';
-    case 'eventil':
-      return 'query { me { eventil { id }}}';
-    case 'facebook':
-      return 'query { me { serviceMetadata { facebook { isLoggedIn }}}}';
-    case 'github':
-      return 'query { me { github { id }}}';
-    case 'gmail':
-      return 'query { me { gmail { sub }}}';
-    case 'google':
-      return 'query { me { google { sub }}}';
-    case 'google-calendar':
-      return 'query { me { googleCalendar { sub }}}';
-    case 'google-compute':
-      return 'query { me { googleCompute { sub }}}';
-    case 'google-docs':
-      return 'query { me { googleDocs { sub }}}';
-    case 'google-translate':
-      return 'query { me { googleTranslate { sub }}}';
-    case 'hubspot':
-      return 'query { me { hubspot { userId }}}';
-    case 'intercom':
-      return 'query { me { intercom { id }}}';
-    case 'quickbooks':
-      return 'query { me { serviceMetadata { quickbooks { isLoggedIn }}}}';
-    case 'salesforce':
-      return 'query { me { salesforce { sub }}}';
-    case 'slack':
-      return 'query { me { slack { id }}}';
-    case 'spotify':
-      return 'query { me { spotify { id }}}';
-    case 'stripe':
-      return 'query { me { stripe { id }}}';
-    case 'trello':
-      return 'query { me { trello { id }}}';
-    case 'twilio':
-      return 'query { me { twilio { id }}}';
-    case 'twitter':
-      return 'query { me { twitter { id }}}';
-    case 'youtube':
-      return 'query { me { youTube { sub }}}';
-    case 'zeit':
-      return 'query { me { zeit { id }}}';
-    case 'zendesk':
-      return 'query { me { zendesk { id }}}';
-    default:
-      (service: empty); // exhaustive switch check from flow
-      throw new Error('No such service ' + service);
+const loggedInQuery = `
+query LoggedInQuery {
+  me {
+    serviceMetadata {
+      loggedInServices {
+        service
+        foreignUserId
+      }
+    }
   }
 }
+`;
 
-function getIsLoggedIn(queryResult: Object, service: Service): boolean {
-  switch (service) {
-    case 'box':
-      return !!idx(queryResult, _ => _.data.me.box.id);
-    case 'dribbble':
-      return !!idx(queryResult, _ => _.data.me.dribbble.id);
-    case 'dropbox':
-      return !!idx(queryResult, _ => _.data.me.dropbox.accountId);
-    case 'eventil':
-      return !!idx(queryResult, _ => _.data.me.eventil.id);
-    case 'facebook':
-      return !!idx(
-        queryResult,
-        _ => _.data.me.serviceMetadata.facebook.isLoggedIn,
-      );
-    case 'github':
-      return !!idx(queryResult, _ => _.data.me.github.id);
-    case 'gmail':
-      return !!idx(queryResult, _ => _.data.me.gmail.sub);
-    case 'google':
-      return !!idx(queryResult, _ => _.data.me.google.sub);
-    case 'google-calendar':
-      return !!idx(queryResult, _ => _.data.me.googleCalendar.sub);
-    case 'google-compute':
-      return !!idx(queryResult, _ => _.data.me.googleCompute.sub);
-    case 'google-docs':
-      return !!idx(queryResult, _ => _.data.me.googleDocs.sub);
-    case 'google-translate':
-      return !!idx(queryResult, _ => _.data.me.googleTranslate.sub);
-    case 'intercom':
-      return !!idx(queryResult, _ => _.data.me.intercom.id);
-    case 'hubspot':
-      return !!idx(queryResult, _ => _.data.me.hubspot.userId);
-    case 'quickbooks':
-      return !!idx(
-        queryResult,
-        _ => _.data.me.serviceMetadata.quickbooks.isLoggedIn,
-      );
-    case 'salesforce':
-      return !!idx(queryResult, _ => _.data.me.salesforce.sub);
-    case 'slack':
-      return !!idx(queryResult, _ => _.data.me.slack.id);
-    case 'spotify':
-      return !!idx(queryResult, _ => _.data.me.spotify.id);
-    case 'stripe':
-      return !!idx(queryResult, _ => _.data.me.stripe.id);
-    case 'trello':
-      return !!idx(queryResult, _ => _.data.me.trello.id);
-    case 'twilio':
-      return !!idx(queryResult, _ => _.data.me.twilio.id);
-    case 'twitter':
-      return !!idx(queryResult, _ => _.data.me.twitter.id);
-    case 'youtube':
-      return !!idx(queryResult, _ => _.data.me.youTube.sub);
-    case 'zeit':
-      return !!idx(queryResult, _ => _.data.me.zeit.id);
-    case 'zendesk':
-      return !!idx(queryResult, _ => _.data.me.zendesk.id);
-    default:
-      (service: empty); // exhaustive switch check from flow
-      throw new Error('No such service ' + service);
+const allServicesQuery = `
+query AllServicesQuery {
+  oneGraph {
+    services(filter: {supportsOauthLogin: true}) {
+      service
+      friendlyServiceName
+    }
   }
+}
+`;
+
+function getServiceEnum(service: string): string {
+  return service.toUpperCase().replace(/-/, '_');
+}
+
+function fromServiceEnum(serviceEnum: string): string {
+  return serviceEnum.toLowerCase().replace(/_/, '-');
+}
+
+function getIsLoggedIn(
+  queryResult: Object,
+  service: Service,
+  foreignUserId?: ?string,
+): boolean {
+  const serviceEnum = getServiceEnum(service);
+  const loggedInServices =
+    idx(queryResult, _ => _.data.me.serviceMetadata.loggedInServices) || [];
+  console.log('loggedInServices', loggedInServices, service, serviceEnum);
+  return !!loggedInServices.find(
+    serviceInfo =>
+      serviceInfo.service === serviceEnum &&
+      (!foreignUserId || foreignUserId === serviceInfo.foreignUserId),
+  );
 }
 
 function getServiceErrors(errors, service) {
   return errors.filter(error => error.path && error.path.includes(service));
 }
 
-// Don't support fragments for gql services, yet.
-const ME_PSUEDO_FRAGMENT = `
-me {
-  serviceMetadata {
-    quickbooks {
-      isLoggedIn
-    }
-    facebook {
-      isLoggedIn
-    }
-  }
-  box {
-   id
-  }
-  dribbble {
-    id
-  }
-  dropbox {
-    accountId
-  }
-  eventil {
-    id
-  }
-  github {
-    id
-  }
-  gmail {
-    sub
-  }
-  google {
-    sub
-  }
-  googleCalendar {
-    sub
-  }
-  googleCompute {
-    sub
-  }
-  googleDocs {
-    sub
-  }
-  googleTranslate {
-    sub
-  }
-  hubspot {
-    userId
-  }
-  intercom {
-    id
-  }
-  salesforce {
-    sub
-  }
-  slack {
-    id
-  }
-  spotify {
-    id
-  }
-  stripe {
-    id
-  }
-  trello {
-    id
-  }
-  twilio {
-    id
-  }
-  twitter {
-    id
-  }
-  youTube {
-    sub
-  }
-  zeit {
-    id
-  }
-  zendesk {
-    id
-  }
-}
-`;
-
-const ALL_SERVICES_QUERY = `
-{
-  ${ME_PSUEDO_FRAGMENT}
-}`;
-
 function logoutMutation(service: Service): string {
   const serviceEnum = service.toUpperCase().replace(/-/, '_');
   return `mutation {
     signoutServices(data: {services: [${serviceEnum}]}) {
-      ${ME_PSUEDO_FRAGMENT}
+      me {
+        serviceMetadata {
+          loggedInServices {
+            service
+            foreignUserId
+          }
+        }
+      }
     }
   }`;
 }
@@ -440,14 +301,14 @@ function logoutMutation(service: Service): string {
 function fetchQuery(
   fetchUrl: string,
   query: string,
-  token: Token,
+  token?: ?Token,
 ): Promise<Object> {
   return fetch(fetchUrl, {
     method: 'POST',
     headers: {
-      Authentication: `Bearer ${token.accessToken}`,
       'Content-Type': 'application/json',
       Accept: 'application/json',
+      ...(token ? {Authentication: `Bearer ${token.accessToken}`} : {}),
     },
     body: JSON.stringify({query}),
   }).then(response => response.json());
@@ -780,14 +641,14 @@ class OneGraphAuth {
       });
   };
 
-  isLoggedIn = (service: Service): Promise<boolean> => {
+  isLoggedIn = (args: Service | {service: string, userId?: ?string}): Promise<boolean> => {
     const accessToken = this._accessToken;
     if (accessToken) {
-      return fetchQuery(
-        this._fetchUrl,
-        loggedInQuery(service),
-        accessToken,
-      ).then(result => getIsLoggedIn(result, service));
+      const service = typeof args === 'string' ? args : args.service;
+      const userId = typeof args === 'string' ? null : args.userId;
+      return fetchQuery(this._fetchUrl, loggedInQuery, accessToken).then(
+        result => getIsLoggedIn(result, service, userId),
+      );
     } else {
       return Promise.resolve(false);
     }
@@ -796,7 +657,7 @@ class OneGraphAuth {
   servicesStatus = (): Promise<ServicesStatus> => {
     const accessToken = this._accessToken;
     if (accessToken) {
-      return fetchQuery(this._fetchUrl, ALL_SERVICES_QUERY, accessToken).then(
+      return fetchQuery(this._fetchUrl, loggedInQuery, accessToken).then(
         result =>
           ALL_SERVICES.reduce((acc, service) => {
             acc[service] = {isLoggedIn: getIsLoggedIn(result, service)};
@@ -810,6 +671,45 @@ class OneGraphAuth {
           return acc;
         }, {}),
       );
+    }
+  };
+
+  allServices = (): Promise<ServicesList> => {
+    return fetchQuery(this._fetchUrl, allServicesQuery, null).then(result => {
+      return result.data.oneGraph.services.map(serviceInfo => ({
+        serviceEnum: serviceInfo.service,
+        service: fromServiceEnum(serviceInfo.service),
+        friendlyServiceName: serviceInfo.friendlyServiceName,
+      }));
+    });
+  };
+
+  loggedInServices = (): Promise<LoggedInServices> => {
+    const accessToken = this._accessToken;
+    if (accessToken) {
+      return fetchQuery(this._fetchUrl, loggedInQuery, accessToken).then(
+        result => {
+          const loggedInServices =
+            idx(result, _ => _.data.me.serviceMetadata.loggedInServices) || [];
+          return loggedInServices.reduce((acc, serviceInfo) => {
+            const serviceKey = fromServiceEnum(serviceInfo.service);
+            const loggedInInfo = acc[serviceKey] || {
+              serviceEnum: serviceInfo.service,
+              userIds: [],
+            };
+            acc[serviceKey] = {
+              ...loggedInInfo,
+              userIds: [
+                serviceInfo.foreignUserId,
+                ...loggedInInfo.userIds,
+              ],
+            };
+            return acc;
+          }, {});
+        },
+      );
+    } else {
+      return Promise.resolve({});
     }
   };
 

@@ -42,6 +42,7 @@ export function hasLocalStorage() {
     return true;
   } catch (e) {
     return (
+      // $FlowFixMe
       e instanceof DOMException &&
       // everything except Firefox
       (e.code === 22 ||
