@@ -264,13 +264,12 @@ function fromServiceEnum(serviceEnum: string): string {
 
 function getIsLoggedIn(
   queryResult: Object,
-  service: Service,
+  service: string,
   foreignUserId?: ?string,
 ): boolean {
   const serviceEnum = getServiceEnum(service);
   const loggedInServices =
     idx(queryResult, _ => _.data.me.serviceMetadata.loggedInServices) || [];
-  console.log('loggedInServices', loggedInServices, service, serviceEnum);
   return !!loggedInServices.find(
     serviceInfo =>
       serviceInfo.service === serviceEnum &&
@@ -528,7 +527,11 @@ class OneGraphAuth {
                           expireDate: Date.now() + response.expires_in * 1000,
                         };
                         this.setToken(token);
-                        resolve({token});
+                        resolve({
+                          token,
+                          service: response.service,
+                          foreignUserId: response.foreign_user_id,
+                        });
                       } else {
                         reject(new Error('Unexpected result from server'));
                       }
@@ -641,13 +644,15 @@ class OneGraphAuth {
       });
   };
 
-  isLoggedIn = (args: Service | {service: string, userId?: ?string}): Promise<boolean> => {
+  isLoggedIn = (
+    args: Service | {service: string, foreignUserId?: ?string},
+  ): Promise<boolean> => {
     const accessToken = this._accessToken;
     if (accessToken) {
       const service = typeof args === 'string' ? args : args.service;
-      const userId = typeof args === 'string' ? null : args.userId;
+      const foreignUserId = typeof args === 'string' ? null : args.foreignUserId;
       return fetchQuery(this._fetchUrl, loggedInQuery, accessToken).then(
-        result => getIsLoggedIn(result, service, userId),
+        result => getIsLoggedIn(result, service, foreignUserId),
       );
     } else {
       return Promise.resolve(false);
@@ -695,13 +700,13 @@ class OneGraphAuth {
             const serviceKey = fromServiceEnum(serviceInfo.service);
             const loggedInInfo = acc[serviceKey] || {
               serviceEnum: serviceInfo.service,
-              userIds: [],
+              foreignUserIds: [],
             };
             acc[serviceKey] = {
               ...loggedInInfo,
-              userIds: [
+              foreignUserIds: [
                 serviceInfo.foreignUserId,
-                ...loggedInInfo.userIds,
+                ...loggedInInfo.foreignUserIds,
               ],
             };
             return acc;
