@@ -85,6 +85,47 @@ type Company {
 
 In this case, any user will be able to query for Company `id`s, but the AuthGuardian rules must have granted this user the `visitor` role to view the Company `name`, and the `admin` role to view the Company `accountBalance`.
 
+#### Put it all together!
+
+```
+const { ApolloServer } = require("apollo-server-express");
+const { schema } = require("./schema.js");
+const {
+  extractBearerToken,
+  hasRoleDirective,
+  isAuthenticatedDirective,
+  makeOneGraphJwtVerifier
+} = require("onegraph-apollo-server-auth");
+
+const verifyJwt = makeOneGraphJwtVerifier(appId);
+
+const server = new ApolloServer({
+  typeDefs: schema,
+  resolvers,
+  schemaDirectives: {
+    hasRole: hasRoleDirective,
+    isAuthenticated: isAuthenticatedDirective
+  },
+  context: async incoming => {
+    const token = extractBearerToken(incoming.req);
+
+    if (!token) {
+      return { jwt: null };
+    }
+
+    try {
+      const decoded = await verifyJwt(token).catch(rejection =>
+        console.warn(`JWT verification failed: `, rejection)
+      );
+      return { jwt: decoded };
+    } catch (rejection) {
+      console.warn(rejection);
+      return { jwt: null };
+    }
+  }
+});
+```
+
 And that's it! With just a few bits of annotation to your schema and a few minutes to configure the AuthGuardian rules, your entire authentication and permissions system can be taken care of securely!
 
 ### Logging in your users via the OneGraph Auth Client
