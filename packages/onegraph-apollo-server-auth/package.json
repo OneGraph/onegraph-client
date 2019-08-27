@@ -1,0 +1,39 @@
+{
+  "name": "onegraph-apollo-server-auth",
+  "version": "2.0.0",
+  "description":
+    "Auth helpers for apollo server and express using OneGraph AuthGuardian",
+  "homepage":
+    "https://github.com/OneGraph/onegraph-client/tree/master/packages/onegraph-apollo-server-auth",
+  "main": "dist/bundle.umd.js",
+  "module": "dist/bundle.es.js",
+  "license": "MIT",
+  "devDependencies": {
+    "apollo-server": "^2.8.1",
+    "apollo-server-express": "^2.8.1",
+    "graphql": "^14.4.2",
+    "babel-plugin-idx": "^2.2.0",
+    "prettier": "1.10.2"
+  },
+  "scripts": {
+    "prettier": "prettier --write \"src/**/*.js\"",
+    "build": "node build.js",
+    "clean": "mkdir -p dist && rm -r dist",
+    "flow": "flow"
+  },
+  "prettier": {
+    "singleQuote": true,
+    "trailingComma": "all",
+    "bracketSpacing": false,
+    "jsxBracketSameLine": true
+  },
+  "peerDependencies": {
+    "apollo-server": "^2.8.1",
+    "apollo-server-express": "^2.8.1",
+    "graphql": "^14.4.2"
+  },
+  "dependencies": {
+    "jsonwebtoken": "8.5.1",
+    "jwks-rsa": "1.6.0"
+  }
+}
