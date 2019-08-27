@@ -46,6 +46,7 @@ export type Opts = {
   saveAuthToStorage?: boolean,
   storage?: Storage,
   communicationMode?: CommunicationMode,
+  graphqlUrl?: ?string,
 };
 
 export type LogoutResult = {
@@ -431,13 +432,13 @@ class OneGraphAuth {
       path: '/dynamic',
       query: {app_id: appId},
     });
-    this._fetchUrl = URI.toString(fetchUrl);
+    this._fetchUrl = opts.graphqlUrl || URI.toString(fetchUrl);
     this._storage =
       opts.storage ||
       (hasLocalStorage() ? new LocalStorage() : new InMemoryStorage());
     this._storageKey = this.appId;
     this._accessToken = tokenFromStorage(this._storage, this._storageKey);
-    this._communicationMode = opts.communicationMode || 'redirect';
+    this._communicationMode = opts.communicationMode || 'post_message';
   }
 
   _clearInterval = (service: Service) => {
