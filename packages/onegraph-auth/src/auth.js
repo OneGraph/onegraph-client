@@ -281,25 +281,46 @@ function getServiceErrors(errors, service) {
   return errors.filter(error => error.path && error.path.includes(service));
 }
 
-function logoutMutation(service: Service): string {
-  const serviceEnum = service.toUpperCase().replace(/-/, '_');
-  return `mutation {
-    signoutServices(data: {services: [${serviceEnum}]}) {
-      me {
-        serviceMetadata {
-          loggedInServices {
-            service
-            foreignUserId
-          }
+const logoutMutation = `mutation SignOutServicesMutation(
+  $services: [OneGraphServiceEnum!]!
+) {
+  signoutServices(data: { services: $services }) {
+    me {
+      serviceMetadata {
+        loggedInServices {
+          service
+          foreignUserId
         }
       }
     }
-  }`;
-}
+  }
+}`;
+
+const logoutUserMutation = `mutation SignOutServicesMutation(
+  $service: OneGraphServiceEnum!
+  $foreignUserId: String!
+) {
+  signoutServiceUser(
+    input: {
+      service: $service
+      foreignUserId: $foreignUserId
+    }
+  ) {
+    me {
+      serviceMetadata {
+        loggedInServices {
+          service
+          foreignUserId
+        }
+      }
+    }
+  }
+}`;
 
 function fetchQuery(
   fetchUrl: string,
   query: string,
+  variables: {[key: string]: any},
   token?: ?Token,
 ): Promise<Object> {
   return fetch(fetchUrl, {
@@ -309,7 +330,7 @@ function fetchQuery(
       Accept: 'application/json',
       ...(token ? {Authentication: `Bearer ${token.accessToken}`} : {}),
     },
-    body: JSON.stringify({query}),
+    body: JSON.stringify({query, variables}),
   }).then(response => response.json());
 }
 
@@ -650,8 +671,9 @@ class OneGraphAuth {
     const accessToken = this._accessToken;
     if (accessToken) {
       const service = typeof args === 'string' ? args : args.service;
-      const foreignUserId = typeof args === 'string' ? null : args.foreignUserId;
-      return fetchQuery(this._fetchUrl, loggedInQuery, accessToken).then(
+      const foreignUserId =
+        typeof args === 'string' ? null : args.foreignUserId;
+      return fetchQuery(this._fetchUrl, loggedInQuery, {}, accessToken).then(
         result => getIsLoggedIn(result, service, foreignUserId),
       );
     } else {
@@ -662,7 +684,7 @@ class OneGraphAuth {
   servicesStatus = (): Promise<ServicesStatus> => {
     const accessToken = this._accessToken;
     if (accessToken) {
-      return fetchQuery(this._fetchUrl, loggedInQuery, accessToken).then(
+      return fetchQuery(this._fetchUrl, loggedInQuery, {}, accessToken).then(
         result =>
           ALL_SERVICES.reduce((acc, service) => {
             acc[service] = {isLoggedIn: getIsLoggedIn(result, service)};
@@ -680,19 +702,21 @@ class OneGraphAuth {
   };
 
   allServices = (): Promise<ServicesList> => {
-    return fetchQuery(this._fetchUrl, allServicesQuery, null).then(result => {
-      return result.data.oneGraph.services.map(serviceInfo => ({
-        serviceEnum: serviceInfo.service,
-        service: fromServiceEnum(serviceInfo.service),
-        friendlyServiceName: serviceInfo.friendlyServiceName,
-      }));
-    });
+    return fetchQuery(this._fetchUrl, allServicesQuery, {}, null).then(
+      result => {
+        return result.data.oneGraph.services.map(serviceInfo => ({
+          serviceEnum: serviceInfo.service,
+          service: fromServiceEnum(serviceInfo.service),
+          friendlyServiceName: serviceInfo.friendlyServiceName,
+        }));
+      },
+    );
   };
 
   loggedInServices = (): Promise<LoggedInServices> => {
     const accessToken = this._accessToken;
     if (accessToken) {
-      return fetchQuery(this._fetchUrl, loggedInQuery, accessToken).then(
+      return fetchQuery(this._fetchUrl, loggedInQuery, {}, accessToken).then(
         result => {
           const loggedInServices =
             idx(result, _ => _.data.me.serviceMetadata.loggedInServices) || [];
@@ -718,15 +742,34 @@ class OneGraphAuth {
     }
   };
 
-  logout = (service: Service): Promise<LogoutResult> => {
+  logout = (
+    service: Service,
+    foreignUserId?: ?string,
+  ): Promise<LogoutResult> => {
     this.cleanup(service);
     const accessToken = this._accessToken;
     if (accessToken) {
-      return fetchQuery(
-        this._fetchUrl,
-        logoutMutation(service),
-        accessToken,
-      ).then(result => {
+      const serviceEnum = getServiceEnum(service);
+
+      const signoutPromise = foreignUserId
+        ? fetchQuery(
+            this._fetchUrl,
+            logoutUserMutation,
+            {
+              service: serviceEnum,
+              foreignUserId: foreignUserId,
+            },
+            accessToken,
+          )
+        : fetchQuery(
+            this._fetchUrl,
+            logoutMutation,
+            {
+              services: [serviceEnum],
+            },
+            accessToken,
+          );
+      return signoutPromise.then(result => {
         if (
           result.errors &&
           result.errors.length &&
@@ -737,6 +780,7 @@ class OneGraphAuth {
           const loggedIn = getIsLoggedIn(
             {data: result.signoutServices},
             service,
+            foreignUserId,
           );
           return {result: loggedIn ? 'failure' : 'success'};
         }
