@@ -1,5 +1,5 @@
 {
-  "name": "@dwwoelfel/onegraph-auth",
+  "name": "onegraph-auth",
   "version": "2.0.2",
   "description": "Auth helpers for OneGraph",
   "homepage": "https://github.com/OneGraph/onegraph-client/tree/master/packages/onegraph-auth",
