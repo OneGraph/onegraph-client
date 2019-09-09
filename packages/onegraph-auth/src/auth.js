@@ -56,6 +56,7 @@ export type LogoutResult = {
 type Token = {
   accessToken: string,
   expireDate: number,
+  refreshToken: string,
 };
 
 export type ServiceStatus = {
@@ -547,6 +548,7 @@ class OneGraphAuth {
                         const token: Token = {
                           accessToken: response.access_token,
                           expireDate: Date.now() + response.expires_in * 1000,
+                          refreshToken: response.refresh_token,
                         };
                         this.setToken(token);
                         resolve({
@@ -616,6 +618,7 @@ class OneGraphAuth {
                       const token: Token = {
                         accessToken: response.access_token,
                         expireDate: Date.now() + response.expires_in * 1000,
+                        refreshToken: response.refresh_token,
                       };
                       this.setToken(token);
                       resolve({token});
