@@ -1,9 +1,21 @@
 ## OneGraph Auth for Apollo Server
 
-You can use AuthGuardian by OneGraph to handle all of your authentication and permission needs in your Apollo server.
+You can use AuthGuardian by OneGraph to handle all of your authentication and
+permission needs in your Apollo server.
+
+### Just give me an example project to try!
+Good point! We have a basic [example apollo-server app with OneGraph
+AuthGuardian](https://github.com/oneGraph/onegraph-apollo-server-auth-example)
+you can clone and try out! Just clone the repo, follow the instructions, and
+you'll have a fully secured GraphQL API!
 
 ### At a glance
-AuthGuardian lets you configure sophisticated rules that will run every time a user logs in to any service (GitHub, Salesforce, Quickbooks, etc.) via OneGraph and will produce a JWT that contains everything you need to know *who* a user is and *what* they're allowed to do in your API.
+AuthGuardian is the easiest way to allow someone to access your API based on
+information in GitHub, Salesforce, Gmail, etc. It lets you graphically configure
+sophisticated rules that will run every time a user logs in to any service
+(GitHub, Salesforce, Quickbooks, etc.) via OneGraph and will produce a JWT that
+contains everything you need to know *who* a user is and *what* they're allowed
+to do in your API.
 
 Each rule consists of two parts: conditions and effects.
 
@@ -11,9 +23,11 @@ An example of a rule condition might be,
 
 > "When this user is a member of organization X on GitHub AND this user has made at least one commit to the repository repo-owner/repo-name".
 
-OneGraph knows how to query each of the services to find out if the condition has been met automatically!
+OneGraph knows how to query each of the services to find out if the condition
+has been met automatically!
 
-When all of the conditions for a rule are met, the effects are run. An effect might be:
+When all of the conditions for a rule are met, the effects are run. An effect
+might be:
 
 > Set the `user.id` to the user's GitHub user-id, and add "admin" to the list of `user.roles`
 
@@ -22,7 +36,8 @@ So the full rule would read:
 > "When this user is a member of organization X on GitHub AND this user has made at least one commit to the repository repo-owner/repo-name".
 > Then set the `user.id` to the user's GitHub user-id AND add "admin" to the list of `user.roles` AND add a Netlify role of "developer"
 
-If this rule passed after a user logged in via GitHub, OneGraph would generate a full, signed JWT for use in your GraphQL resolvers:
+If this rule passed after a user logged in via GitHub, OneGraph would generate a
+full, signed JWT for use in your GraphQL resolvers:
 
 ```
 {
@@ -64,7 +79,10 @@ directive @hasRole(oneOf: [String!]) on QUERY | FIELD_DEFINITION
 ```
 
 #### @isAuthenticated
-Any field that has this directive added to is will always check in the JWT that a value is present at `user.id`. If not, the user has not authenticated (that is, has not logged into any service), and the field will return null, and an error message will be added to the response.
+Any field that has this directive added to is will always check in the JWT that
+a value is present at `user.id`. If not, the user has not authenticated (that
+is, has not logged into any service), and the field will return null, and an
+error message will be added to the response.
 
 ```
 type Query {
@@ -73,7 +91,9 @@ type Query {
 ```
 
 #### @hasRole
-Any field with this directive added will check in the JWT at the path `user.roles` to make sure that the user has been granted a role that's required to view this field.
+Any field with this directive added will check in the JWT at the path
+`user.roles` to make sure that the user has been granted a role that's required
+to view this field.
 
 ```
 type Company {
@@ -83,7 +103,9 @@ type Company {
 }
 ```
 
-In this case, any user will be able to query for Company `id`s, but the AuthGuardian rules must have granted this user the `visitor` role to view the Company `name`, and the `admin` role to view the Company `accountBalance`.
+In this case, any user will be able to query for Company `id`s, but the
+AuthGuardian rules must have granted this user the `visitor` role to view the
+Company `name`, and the `admin` role to view the Company `accountBalance`.
 
 #### Put it all together!
 
@@ -126,10 +148,14 @@ const server = new ApolloServer({
 });
 ```
 
-And that's it! With just a few bits of annotation to your schema and a few minutes to configure the AuthGuardian rules, your entire authentication and permissions system can be taken care of securely!
+And that's it! With just a few bits of annotation to your schema and a few
+minutes to configure the AuthGuardian rules, your entire authentication and
+permissions system can be taken care of securely!
 
 ### Logging in your users via the OneGraph Auth Client
-See the instructions on how to quickly get your users logging in via [Onegraph Auth](https://www.onegraph.com/docs/logging_users_in_and_out.html). Here's a rough summary:
+See the instructions on how to quickly get your users logging in via [Onegraph
+Auth](https://www.onegraph.com/docs/logging_users_in_and_out.html). Here's a
+rough summary:
 
 Install the `onegraph-auth` package on your client:
 
@@ -139,7 +165,8 @@ npm install --save onegraph-auth
 yarn add onegraph-auth
 ```
 
-Instantiate the auth client in the browser (with the same `APP_ID` you used to configure AuthGuardian):
+Instantiate the auth client in the browser (with the same `APP_ID` you used to
+configure AuthGuardian):
 
 ```
 import OneGraphAuth from 'onegraph-auth';
@@ -168,4 +195,6 @@ auth
   .catch(e => console.error('Problem logging in', e));
 ```
 
-That's it! At the end of that flow, all of your AuthGuardian rules will have run, and the user will have a JWT that reflects their authentication and permissions for your API!
+That's it! At the end of that flow, all of your AuthGuardian rules will have
+run, and the user will have a JWT that reflects their authentication and
+permissions for your API!

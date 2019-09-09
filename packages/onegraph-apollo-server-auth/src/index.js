@@ -1,10 +1,6 @@
 // Peers
 const {SchemaDirectiveVisitor} = require('apollo-server');
-const {
-  AuthenticationError,
-  AuthorizationError,
-} = require('apollo-server-express');
-const {GraphQLNonNull} = require('graphql');
+const {AuthenticationError} = require('apollo-server-errors');
 // Deps
 const jwt = require('jsonwebtoken');
 var jwksClient = require('jwks-rsa');
@@ -13,9 +9,15 @@ const atob = str => {
   return Buffer.from(str, 'base64').toString('binary');
 };
 
-class hasRoleDirective extends SchemaDirectiveVisitor {
+const uuidRegex = /[0-9a-fA-F]{8}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{12}/g;
+
+const isUuid = string => {
+  const matches = (string || '').match(uuidRegex);
+  return (matches || []).length === 1;
+};
+
+class hasRole extends SchemaDirectiveVisitor {
   visitFieldDefinition(field) {
-    const requiredRoles = this.args.oneOf;
     const resolver =
       field.resolve ||
       (source => {
@@ -24,6 +26,7 @@ class hasRoleDirective extends SchemaDirectiveVisitor {
       });
     const {url} = this.args;
 
+    const requiredRoles = this.args.oneOf;
     field.resolve = (source, args, context, info) => {
       const userRoles =
         (context.jwt && context.jwt.user && context.jwt.user.roles) || [];
@@ -41,17 +44,19 @@ class hasRoleDirective extends SchemaDirectiveVisitor {
 
       return resolver(source, args, context, info);
     };
-
-    if (field.type instanceof GraphQLNonNull) {
-      field.type = field.type.ofType;
-    }
   }
 }
 
-class isAuthenticatedDirective extends SchemaDirectiveVisitor {
+class isAuthenticated extends SchemaDirectiveVisitor {
   visitFieldDefinition(field) {
-    const resolver = field.resolve;
+    const resolver =
+      field.resolve ||
+      (source => {
+        const value = source[field.name];
+        return value;
+      });
     const {url} = this.args;
+
     field.resolve = (source, args, context, info) => {
       const userId = context.jwt && context.jwt.user && context.jwt.user.id;
 
@@ -63,10 +68,6 @@ class isAuthenticatedDirective extends SchemaDirectiveVisitor {
 
       return resolver(source, args, context, info);
     };
-
-    if (field.type instanceof GraphQLNonNull) {
-      field.type = field.type.ofType;
-    }
   }
 }
 
@@ -78,11 +79,20 @@ const extractBearerToken = req => {
   return token;
 };
 
-const makeOneGraphJwtVerifier = (appId, options) => {
-  const {sharedSecret, strictSsl} = options || {};
+const makeOneGraphJwtVerifier = (appId, options_) => {
+  const options = options_ || {};
+
+  if (!isUuid(appId)) {
+    console.error('OneGraph APP_ID must be a UUID, you provided: ', appId);
+    console.error(
+      '\tCheck that you have the right APP_ID from the OneGraph dashboard: https://www.onegraph.com/dashboard',
+    );
+  }
+
+  const {sharedSecret, strictSsl} = options;
   const origin = options.oneGraphOrigin || 'serve.onegraph.com';
 
-  const handler = token => {
+  const verifyJwt = token => {
     const promise = new Promise((resolve, reject) => {
       if (!token) return resolve({jwt: null});
 
@@ -140,7 +150,7 @@ const makeOneGraphJwtVerifier = (appId, options) => {
           jwt.verify(token, getKey, {algorithms: ['RS256']}, cb);
       }
 
-      verifier(token, function(err, decoded) {
+      return verifier(token, function(err, decoded) {
         resolve(decoded);
       });
     });
@@ -148,12 +158,41 @@ const makeOneGraphJwtVerifier = (appId, options) => {
     return promise;
   };
 
-  return handler;
+  const jwtFromHeaders = headers => {
+    const promise = new Promise((resolve, reject) => {
+      const authorization =
+        headers['Authorization'] ||
+        headers['authorization'] ||
+        headers['Authentication'] ||
+        headers['authentication'];
+
+      const token = (authorization.match(/[bB]earer (.+)$/) || [])[1];
+
+      if (!token) {
+        resolve({jwt: null});
+      }
+
+      try {
+        const decoded = verifyJwt(token)
+          .then(decoded => {
+            resolve({jwt: decoded});
+          })
+          .catch(rejection => {
+            console.warn(`JWT present, but verification failed: `, rejection);
+            resolve({jwt: null});
+          });
+      } catch (rejection) {}
+    });
+
+    return promise;
+  };
+
+  return jwtFromHeaders;
 };
 
 module.exports = {
   extractBearerToken: extractBearerToken,
-  isAuthenticatedDirective: isAuthenticatedDirective,
-  hasRoleDirective: hasRoleDirective,
+  isAuthenticated: isAuthenticated,
+  hasRole: hasRole,
   makeOneGraphJwtVerifier,
 };
