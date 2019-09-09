@@ -1,18 +1,16 @@
 {
   "name": "onegraph-apollo-server-auth",
-  "version": "2.0.0",
-  "description":
-    "Auth helpers for apollo server and express using OneGraph AuthGuardian",
-  "homepage":
-    "https://github.com/OneGraph/onegraph-client/tree/master/packages/onegraph-apollo-server-auth",
+  "version": "2.0.3",
+  "description": "Auth helpers for apollo server and express using OneGraph AuthGuardian",
+  "homepage": "https://github.com/OneGraph/onegraph-client/tree/master/packages/onegraph-apollo-server-auth",
   "main": "dist/bundle.umd.js",
   "module": "dist/bundle.es.js",
   "license": "MIT",
   "devDependencies": {
     "apollo-server": "^2.8.1",
     "apollo-server-express": "^2.8.1",
-    "graphql": "^14.4.2",
     "babel-plugin-idx": "^2.2.0",
+    "graphql": "^14.4.2",
     "prettier": "1.10.2"
   },
   "scripts": {
