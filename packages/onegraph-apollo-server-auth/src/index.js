@@ -1,5 +1,5 @@
 // Peers
-const {SchemaDirectiveVisitor} = require('apollo-server');
+const {SchemaDirectiveVisitor} = require('graphql-tools');
 const {
   AuthenticationError,
   AuthorizationError,
