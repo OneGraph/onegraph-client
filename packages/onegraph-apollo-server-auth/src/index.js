@@ -1,11 +1,10 @@
 // Peers
 const {SchemaDirectiveVisitor} = require('graphql-tools');
-const {GraphQLDirective} = require("graphql");
+const {GraphQLNonNull, DirectiveLocation, GraphQLDirective, GraphQLEnumType} = require("graphql");
 const {
   AuthenticationError,
   AuthorizationError,
 } = require('apollo-server-express');
-const {GraphQLNonNull} = require('graphql');
 // Deps
 const jwt = require('jsonwebtoken');
 var jwksClient = require('jwks-rsa');
@@ -40,7 +39,27 @@ class hasRoleDirective extends SchemaDirectiveVisitor {
     // 2. Throw an exception to force the client to declare the directive.
     // 3. Return null, and forget about declaring this directive.
     //
-    return null;
+    // All three are valid options, since the visitor will still work without
+    // any declared directives. In fact, unless you're publishing a directive
+    // implementation for public consumption, you can probably just ignore
+    // getDirectiveDeclaration altogether.
+
+    return new GraphQLDirective({
+      name: directiveName,
+      locations: [
+        DirectiveLocation.OBJECT,
+        DirectiveLocation.FIELD_DEFINITION,
+      ],
+      args: {
+        requires: {
+          // Having the schema available here is important for obtaining
+          // references to existing type objects, such as the Role enum.
+          type: (schema.getType('Role') as GraphQLEnumType),
+          // Set the default minimum Role to REVIEWER.
+          defaultValue: 'REVIEWER',
+        }
+      }]
+    });
   }
 
   visitFieldDefinition(field) {
@@ -103,7 +122,27 @@ class isAuthenticatedDirective extends SchemaDirectiveVisitor {
     // 2. Throw an exception to force the client to declare the directive.
     // 3. Return null, and forget about declaring this directive.
     //
-    return null;
+    // All three are valid options, since the visitor will still work without
+    // any declared directives. In fact, unless you're publishing a directive
+    // implementation for public consumption, you can probably just ignore
+    // getDirectiveDeclaration altogether.
+
+    return new GraphQLDirective({
+      name: directiveName,
+      locations: [
+        DirectiveLocation.OBJECT,
+        DirectiveLocation.FIELD_DEFINITION,
+      ],
+      args: {
+        requires: {
+          // Having the schema available here is important for obtaining
+          // references to existing type objects, such as the Role enum.
+          type: (schema.getType('Role') as GraphQLEnumType),
+          // Set the default minimum Role to REVIEWER.
+          defaultValue: 'REVIEWER',
+        }
+      }]
+    });
   }
 
   visitFieldDefinition(field) {
