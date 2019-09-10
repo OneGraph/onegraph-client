@@ -1,5 +1,6 @@
 // Peers
 const {SchemaDirectiveVisitor} = require('graphql-tools');
+const {GraphQLDirective} = require("graphql");
 const {
   AuthenticationError,
   AuthorizationError,
@@ -14,6 +15,34 @@ const atob = str => {
 };
 
 class hasRoleDirective extends SchemaDirectiveVisitor {
+  public static getDirectiveDeclaration(
+    directiveName: string,
+    schema: GraphQLSchema,
+  ): GraphQLDirective {
+    const previousDirective = schema.getDirective(directiveName);
+    if (previousDirective) {
+      // If a previous directive declaration exists in the schema, it may be
+      // better to modify it than to return a new GraphQLDirective object.
+      previousDirective.args.forEach(arg => {
+        if (arg.name === 'requires') {
+          // Lower the default minimum Role from ADMIN to REVIEWER.
+          arg.defaultValue = 'REVIEWER';
+        }
+      });
+
+      return previousDirective;
+    }
+
+    // If a previous directive with this name was not found in the schema,
+    // there are several options:
+    //
+    // 1. Construct a new GraphQLDirective (see below).
+    // 2. Throw an exception to force the client to declare the directive.
+    // 3. Return null, and forget about declaring this directive.
+    //
+    return null;
+  }
+
   visitFieldDefinition(field) {
     const requiredRoles = this.args.oneOf;
     const resolver =
@@ -49,6 +78,34 @@ class hasRoleDirective extends SchemaDirectiveVisitor {
 }
 
 class isAuthenticatedDirective extends SchemaDirectiveVisitor {
+  public static getDirectiveDeclaration(
+    directiveName: string,
+    schema: GraphQLSchema,
+  ): GraphQLDirective {
+    const previousDirective = schema.getDirective(directiveName);
+    if (previousDirective) {
+      // If a previous directive declaration exists in the schema, it may be
+      // better to modify it than to return a new GraphQLDirective object.
+      previousDirective.args.forEach(arg => {
+        if (arg.name === 'requires') {
+          // Lower the default minimum Role from ADMIN to REVIEWER.
+          arg.defaultValue = 'REVIEWER';
+        }
+      });
+
+      return previousDirective;
+    }
+
+    // If a previous directive with this name was not found in the schema,
+    // there are several options:
+    //
+    // 1. Construct a new GraphQLDirective (see below).
+    // 2. Throw an exception to force the client to declare the directive.
+    // 3. Return null, and forget about declaring this directive.
+    //
+    return null;
+  }
+
   visitFieldDefinition(field) {
     const resolver =
     field.resolve ||
