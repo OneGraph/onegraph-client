@@ -50,7 +50,12 @@ class hasRoleDirective extends SchemaDirectiveVisitor {
 
 class isAuthenticatedDirective extends SchemaDirectiveVisitor {
   visitFieldDefinition(field) {
-    const resolver = field.resolve;
+    const resolver =
+    field.resolve ||
+    (source => {
+      const value = source[field.name];
+      return value;
+    });
     const {url} = this.args;
     field.resolve = (source, args, context, info) => {
       const userId = context.jwt && context.jwt.user && context.jwt.user.id;
