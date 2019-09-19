@@ -395,6 +395,38 @@ function tokenFromStorage(storage: Storage, appId: string): ?Token {
   return null;
 }
 
+const findMissingAuthService = results => {
+  /* Detect and normalize between:
+  1. The full graphql result
+  2. The `result.errors` of a graphql result
+  3. Apollo's GraphQL error structure
+   */
+  let errors =
+    results &&
+    // Full GraphQL result
+    (results.errors ||
+      // Apollo error
+      results.graphQLErrors ||
+      // Possibly result.errors
+      results);
+
+  // If errors aren't an array, bail
+  if (!Array.isArray(errors)) {
+    return null;
+  }
+
+  const missingServiceError = errors.filter(
+    error => error.extensions.type === 'auth/missing-auth',
+  )[0];
+
+  const missingService =
+    missingServiceError &&
+    missingServiceError.extensions &&
+    missingServiceError.extensions.service;
+
+  return missingService;
+};
+
 const DEFAULT_ONEGRAPH_ORIGIN = 'https://serve.onegraph.com';
 
 class OneGraphAuth {
@@ -799,6 +831,8 @@ class OneGraphAuth {
     Object.keys(this._authWindows).forEach(key => this.cleanup(key));
     this._storage.removeItem(this._storageKey);
   };
+
+  findMissingAuthService = findMissingAuthService;
 }
 
 export default OneGraphAuth;
