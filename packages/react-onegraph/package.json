@@ -1,7 +1,7 @@
 {
   "name": "react-onegraph",
   "description": "React bindings for OneGraph",
-  "version": "2.0.5",
+  "version": "2.0.6",
   "module": "dist/bundle.es.js",
   "main": "dist/bundle.umd.js",
   "repository": "https://github.com/onegraph/onegraph-client/tree/master/packages/react-onegraph",
@@ -22,7 +22,7 @@
     "flow": "flow"
   },
   "dependencies": {
-    "onegraph-auth": "^2.0.5"
+    "onegraph-auth": "^2.0.6"
   },
   "peerDependencies": {
     "react": "^16.3.0"
