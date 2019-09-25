@@ -479,7 +479,7 @@ class OneGraphAuth {
   };
 
   _clearMessageListener = (service: Service) => {
-    window.removeEventListener('message', this._messageListeners[service]);
+    window.removeEventListener('message', this._messageListeners[service], false);
     delete this._messageListeners[service];
   };
 
@@ -536,69 +536,67 @@ class OneGraphAuth {
   ): Promise<AuthResponse> => {
     const postMessageOrigin = normalizeRedirectOrigin(this.oneGraphOrigin);
     return new Promise((resolve, reject) => {
-      this._messageListeners[service] = window.addEventListener(
-        'message',
-        event => {
-          if (normalizeRedirectOrigin(event.origin) !== postMessageOrigin) {
-            console.warn(
-              'ignoring event for origin',
-              event.origin,
-              'expected',
-              postMessageOrigin,
-            );
-          } else {
-            const message = JSON.parse(event.data);
-            if (message && message.version === 1) {
-              const {code, state} = message;
-              if (state !== stateParam) {
-                console.warn('Invalid state param, skipping');
+      const listener = event => {
+        if (normalizeRedirectOrigin(event.origin) !== postMessageOrigin) {
+          console.warn(
+            'ignoring event for origin',
+            event.origin,
+            'expected',
+            postMessageOrigin,
+          );
+        } else {
+          const message = JSON.parse(event.data);
+          if (message && message.version === 1) {
+            const {code, state} = message;
+            if (state !== stateParam) {
+              console.warn('Invalid state param, skipping');
+            } else {
+              if (!code) {
+                reject(
+                  new OAuthError({
+                    error: 'invalid_grant',
+                    error_description: 'Missing code',
+                  }),
+                );
               } else {
-                if (!code) {
-                  reject(
-                    new OAuthError({
-                      error: 'invalid_grant',
-                      error_description: 'Missing code',
-                    }),
-                  );
-                } else {
-                  exchangeCode(
-                    this.oneGraphOrigin,
-                    this.appId,
-                    this._redirectOrigin,
-                    this._redirectPath,
-                    code,
-                    this._accessToken,
-                  )
-                    .then(response => {
-                      if (response.error) {
-                        reject(new OAuthError(response));
-                      } else if (
-                        typeof response.access_token === 'string' &&
-                        typeof response.expires_in === 'number'
-                      ) {
-                        const token: Token = {
-                          accessToken: response.access_token,
-                          expireDate: Date.now() + response.expires_in * 1000,
-                          refreshToken: response.refresh_token,
-                        };
-                        this.setToken(token);
-                        resolve({
-                          token,
-                          service: response.service,
-                          foreignUserId: response.foreign_user_id,
-                        });
-                      } else {
-                        reject(new Error('Unexpected result from server'));
-                      }
-                    })
-                    .catch(e => reject(e));
-                }
+                exchangeCode(
+                  this.oneGraphOrigin,
+                  this.appId,
+                  this._redirectOrigin,
+                  this._redirectPath,
+                  code,
+                  this._accessToken,
+                )
+                  .then(response => {
+                    if (response.error) {
+                      reject(new OAuthError(response));
+                    } else if (
+                      typeof response.access_token === 'string' &&
+                      typeof response.expires_in === 'number'
+                    ) {
+                      const token: Token = {
+                        accessToken: response.access_token,
+                        expireDate: Date.now() + response.expires_in * 1000,
+                        refreshToken: response.refresh_token,
+                      };
+                      this.setToken(token);
+                      resolve({
+                        token,
+                        service: response.service,
+                        foreignUserId: response.foreign_user_id,
+                      });
+                    } else {
+                      reject(new Error('Unexpected result from server'));
+                    }
+                  })
+                  .catch(e => reject(e));
               }
             }
           }
-        },
-        false,
-      );
+        }
+      };
+      this._messageListeners[service] = listener;
+      window.addEventListener('message', listener, false);
     });
   };
 
