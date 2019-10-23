@@ -56,7 +56,7 @@ export type LogoutResult = {
 type Token = {
   accessToken: string,
   expireDate: number,
-  refreshToken: string,
+  refreshToken?: ?string,
 };
 
 export type ServiceStatus = {
@@ -365,6 +365,32 @@ function exchangeCode(
   }).then(response => response.json());
 }
 
+function exchangeRefreshToken(
+  oneGraphOrigin: string,
+  appId: string,
+  refreshToken: string,
+): Promise<Object> {
+  const url = URI.make({
+    origin: oneGraphOrigin,
+    path: '/oauth/token',
+    query: {
+      app_id: appId,
+    },
+  });
+  const headers = {
+    'Content-Type': 'application/x-www-form-urlencoded',
+    accept: 'application/json',
+  };
+  return fetch(URI.toString(url), {
+    method: 'POST',
+    headers,
+    body: URI.queryToString({
+      grant_type: 'refresh_token',
+      refresh_token: refreshToken,
+    }),
+  }).then(response => response.json());
+}
+
 function byteArrayToString(byteArray) {
   return byteArray.reduce(
     (acc, byte) => acc + (byte & 0xff).toString(16).slice(-2),
@@ -395,7 +421,7 @@ function tokenFromStorage(storage: Storage, appId: string): ?Token {
   return null;
 }
 
-function findMissingAuthServices(results) {
+function findMissingAuthServices(results: any) {
   /* Detect and normalize between:
   1. The full graphql result
   2. The `result.errors` of a graphql result
@@ -479,7 +505,11 @@ class OneGraphAuth {
   };
 
   _clearMessageListener = (service: Service) => {
-    window.removeEventListener('message', this._messageListeners[service], false);
+    window.removeEventListener(
+      'message',
+      this._messageListeners[service],
+      false,
+    );
     delete this._messageListeners[service];
   };
 
@@ -496,6 +526,65 @@ class OneGraphAuth {
   };
 
   accessToken = (): ?Token => this._accessToken;
+
+  tokenExpireDate = (): ?Date => {
+    if (!this._accessToken) {
+      return null;
+    }
+    return new Date(this._accessToken.expireDate);
+  };
+
+  tokenExpiresSecondsFromNow = (): ?number => {
+    const expireDate = this.tokenExpireDate();
+    if (!expireDate) {
+      return null;
+    }
+    const seconds = expireDate - new Date();
+    if (seconds < 0) {
+      return null;
+    }
+    return Math.floor(seconds / 1000);
+  };
+
+  refreshToken = (refreshToken: string): Promise<?Token> => {
+    return exchangeRefreshToken(
+      this.oneGraphOrigin,
+      this.appId,
+      refreshToken,
+    ).then(response => {
+      if (!response) {
+        throw new OAuthError({
+          error: 'invalid_grant',
+          error_description: 'Invalid response refreshing token.',
+        });
+      }
+      if (response.error) {
+        throw new OAuthError({
+          error: response.error,
+          error_description: response.error_description,
+        });
+      }
+      if (
+        !response.access_token ||
+        !response.expires_in ||
+        !response.refresh_token
+      ) {
+        throw new OAuthError({
+          error: 'invalid_grant',
+          error_description:
+            'Inavlid response from server while refreshing token.',
+        });
+      } else {
+        const token: Token = {
+          accessToken: response.access_token,
+          expireDate: Date.now() + response.expires_in * 1000,
+          refreshToken: response.refresh_token,
+        };
+        this.setToken(token);
+        return token;
+      }
+    });
+  };
 
   authHeaders = (): {Authentication?: string} => {
     if (this._accessToken) {
@@ -527,7 +616,8 @@ class OneGraphAuth {
 
   setToken = (token: Token) => {
     this._accessToken = token;
-    this._storage.setItem(this._storageKey, JSON.stringify(token));
+    const {refreshToken, ...storableToken} = token;
+    this._storage.setItem(this._storageKey, JSON.stringify(storableToken));
   };
 
   _waitForAuthFinishPostMessage = (
