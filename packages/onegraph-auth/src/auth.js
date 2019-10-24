@@ -765,6 +765,11 @@ class OneGraphAuth {
   };
 
   login = (service: Service, scopes: ?Array<string>): Promise<AuthResponse> => {
+    if (!service) {
+      throw new Error(
+        "Missing required argument. Provide service as first argument to login (e.g. `auth.login('stripe')`).",
+      );
+    }
     this.cleanup(service);
     const stateParam = makeStateParam();
     this._authWindows[service] = createAuthWindow(
@@ -794,6 +799,11 @@ class OneGraphAuth {
     const accessToken = this._accessToken;
     if (accessToken) {
       const service = typeof args === 'string' ? args : args.service;
+      if (!service) {
+        throw new Error(
+          "Missing required argument. Provide service as first argument to isLoggedIn (e.g. `auth.isLoggedIn('stripe')`).",
+        );
+      }
       const foreignUserId =
         typeof args === 'string' ? null : args.foreignUserId;
       return fetchQuery(this._fetchUrl, loggedInQuery, {}, accessToken).then(
@@ -869,6 +879,11 @@ class OneGraphAuth {
     service: Service,
     foreignUserId?: ?string,
   ): Promise<LogoutResult> => {
+    if (!service) {
+      throw new Error(
+        "Missing required argument. Provide service as first argument to logout (e.g. `auth.logout('stripe')`).",
+      );
+    }
     this.cleanup(service);
     const accessToken = this._accessToken;
     if (accessToken) {
