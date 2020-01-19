@@ -330,7 +330,7 @@ function fetchQuery(
     headers: {
       'Content-Type': 'application/json',
       Accept: 'application/json',
-      ...(token ? {Authentication: `Bearer ${token.accessToken}`} : {}),
+      ...(token ? {Authorization: `Bearer ${token.accessToken}`} : {}),
     },
     body: JSON.stringify({query, variables}),
   }).then(response => response.json());
@@ -357,7 +357,7 @@ function exchangeCode(
   const headers = {
     'Content-Type': 'application/json',
     Accept: 'application/json',
-    ...(token ? {Authentication: `Bearer ${token.accessToken}`} : {}),
+    ...(token ? {Authorization: `Bearer ${token.accessToken}`} : {}),
   };
   return fetch(URI.toString(url), {
     method: 'POST',
@@ -586,9 +586,9 @@ class OneGraphAuth {
     });
   };
 
-  authHeaders = (): {Authentication?: string} => {
+  authHeaders = (): {Authorization?: string} => {
     if (this._accessToken) {
-      return {Authentication: `Bearer ${this._accessToken.accessToken}`};
+      return {Authorization: `Bearer ${this._accessToken.accessToken}`};
     } else {
       return {};
     }
@@ -806,9 +806,12 @@ class OneGraphAuth {
       }
       const foreignUserId =
         typeof args === 'string' ? null : args.foreignUserId;
-      return fetchQuery(this._fetchUrl, loggedInQuery, {}, accessToken).then(
-        result => getIsLoggedIn(result, service, foreignUserId),
-      );
+      return fetchQuery(
+        this._fetchUrl,
+        loggedInQuery,
+        {},
+        accessToken,
+      ).then(result => getIsLoggedIn(result, service, foreignUserId));
     } else {
       return Promise.resolve(false);
     }
