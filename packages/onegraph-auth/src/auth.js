@@ -806,12 +806,9 @@ class OneGraphAuth {
       }
       const foreignUserId =
         typeof args === 'string' ? null : args.foreignUserId;
-      return fetchQuery(
-        this._fetchUrl,
-        loggedInQuery,
-        {},
-        accessToken,
-      ).then(result => getIsLoggedIn(result, service, foreignUserId));
+      return fetchQuery(this._fetchUrl, loggedInQuery, {}, accessToken).then(
+        result => getIsLoggedIn(result, service, foreignUserId),
+      );
     } else {
       return Promise.resolve(false);
     }
@@ -935,6 +932,7 @@ class OneGraphAuth {
     Object.keys(this._intervalIds).forEach(key => this.cleanup(key));
     Object.keys(this._authWindows).forEach(key => this.cleanup(key));
     this._storage.removeItem(this._storageKey);
+    this._accessToken = null;
   };
 
   findMissingAuthServices = findMissingAuthServices;

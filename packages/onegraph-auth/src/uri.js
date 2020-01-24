@@ -85,4 +85,12 @@ function make({origin, path, query}: MakeArgs): URI {
   return uri;
 }
 
-export default {parse, safeParse, addQueryParams, setPath, toString, make, queryToString};
+export default {
+  parse,
+  safeParse,
+  addQueryParams,
+  setPath,
+  toString,
+  make,
+  queryToString,
+};
