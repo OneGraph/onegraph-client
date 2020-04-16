@@ -15,8 +15,6 @@ class AuthProvider extends Component {
       appId: this.props.appId,
     });
 
-    window.auth = auth;
-
     auth.servicesStatus().then(status =>
       this.setState({
         headers: auth.authHeaders(),
