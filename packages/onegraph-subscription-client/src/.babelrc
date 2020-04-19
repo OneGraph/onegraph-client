@@ -1,0 +1,9 @@
+{
+  "presets": [
+    ["env", {
+      "modules": false
+    }],
+    "flow"
+  ],
+  "plugins": ["external-helpers", "transform-object-rest-spread"]
+}
