@@ -54,7 +54,7 @@ client
 
 ```javascript
 import {SubscriptionClient} from 'onegraph-subscription-client';
-import {OneGraphAuth} from 'onegraph-auth;
+import {OneGraphAuth} from 'onegraph-auth';
 
 const ONEGRAPH_APP_ID = 'YOUR_APP_ID';
 
