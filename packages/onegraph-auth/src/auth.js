@@ -257,11 +257,11 @@ query AllServicesQuery {
 `;
 
 function getServiceEnum(service: string): string {
-  return service.toUpperCase().replace(/-/, '_');
+  return service.toUpperCase().replace(/-/g, '_');
 }
 
 function fromServiceEnum(serviceEnum: string): string {
-  return serviceEnum.toLowerCase().replace(/_/, '-');
+  return serviceEnum.toLowerCase().replace(/_/g, '-');
 }
 
 function getIsLoggedIn(
