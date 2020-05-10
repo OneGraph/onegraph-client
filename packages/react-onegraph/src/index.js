@@ -5,13 +5,17 @@ const AuthContext = createContext();
 
 class AuthProvider extends Component {
   state = {
-    auth: null,
+    auth:
+      this.props.auth ||
+      new OneGraphAuth({
+        appId: this.props.appId,
+      }),
     status: {},
     headers: {},
   };
 
   componentDidMount() {
-    const auth = this.getAuth();
+    const {auth} = this.state;
 
     auth.servicesStatus().then(status =>
       this.setState({
@@ -24,15 +28,6 @@ class AuthProvider extends Component {
       }),
     );
   }
-
-  getAuth = () => {
-    const auth =
-      this.props.auth ||
-      new OneGraphAuth({
-        appId: this.props.appId,
-      });
-    return auth;
-  };
 
   login = (service, callback) => {
     const {auth, status} = this.state;
