@@ -5,15 +5,17 @@ const AuthContext = createContext();
 
 class AuthProvider extends Component {
   state = {
-    auth: null,
+    auth:
+      this.props.auth ||
+      new OneGraphAuth({
+        appId: this.props.appId,
+      }),
     status: {},
     headers: {},
   };
 
   componentDidMount() {
-    const auth = new OneGraphAuth({
-      appId: this.props.appId,
-    });
+    const {auth} = this.state;
 
     auth.servicesStatus().then(status =>
       this.setState({
@@ -28,7 +30,7 @@ class AuthProvider extends Component {
   }
 
   login = (service, callback) => {
-    const {auth, status, headers} = this.state;
+    const {auth, status} = this.state;
 
     if (auth) {
       auth.login(service).then(() => {
@@ -48,7 +50,7 @@ class AuthProvider extends Component {
   };
 
   logout = (service, callback) => {
-    const {auth, status, headers} = this.state;
+    const {auth, status} = this.state;
 
     auth.logout(service).then(() => {
       auth.isLoggedIn(service).then(isLoggedIn => {
@@ -66,8 +68,8 @@ class AuthProvider extends Component {
   };
 
   render() {
-    const {appId, children} = this.props;
-    const {auth, status, headers} = this.state;
+    const {appId} = this.props;
+    const {status, headers} = this.state;
 
     const authInterface = {
       status,
