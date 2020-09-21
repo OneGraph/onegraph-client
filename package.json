@@ -9,7 +9,7 @@
     "clean": "lerna run -- clean",
     "build": "lerna run -- build",
     "prettier": "lerna run -- prettier",
-    "deploy": "yarn run clean && yarn run build && lerna publish",
+    "deploy": "yarn run clean && yarn run build && lerna publish --no-push && git push --tags",
     "force-deploy": "yarn run clean && yarn run build && lerna publish --force-publish",
     "flow": "flow"
   },
