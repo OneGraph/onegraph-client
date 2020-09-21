@@ -3,6 +3,7 @@
 import OAuthError from './oauthError';
 import {hasLocalStorage, InMemoryStorage, LocalStorage} from './storage';
 import URI from './uri';
+import PKCE from './pkce';
 // $FlowFixMe
 const idx = require('idx');
 
@@ -200,24 +201,29 @@ function getWindowOpts(): Object {
   };
 }
 
-function createAuthWindow(
-  authUrlString: string,
+function createAuthWindow({
+  url,
+  service,
+}: {
+  url?: ?string,
   service: Service,
-  stateParam: StateParam,
-  scopes: ?Array<string>,
-): Window {
+}): Window {
   const windowOpts = getWindowOpts();
-  const authUrl = URI.addQueryParams(URI.parse(authUrlString), {
-    state: stateParam,
-    ...(scopes ? {scopes: scopes.join(',')} : {}),
-  });
-  return window.open(
-    URI.toString(authUrl),
-    `Log in with ${friendlyServiceName(service)}`,
+  const w = window.open(
+    url || '',
+    // A unqiue name prevents orphaned popups from stealing our window.open
+    `${service}_${Math.random()}`.replace('.', ''),
     Object.keys(windowOpts)
       .map(k => `${k}=${windowOpts[k]}`)
       .join(','),
   );
+  if (!url && w && w.document) {
+    try {
+      w.document.title = `Log in with ${friendlyServiceName(service)}`;
+      w.document.body.innerHTML = `<div style="display:flex;justify-content:center;align-items:center;height:100vh;width:100vw%"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid" width="48px" height="48px" style="background: none;"><circle cx="50" cy="50" fill="none" stroke="#3cc7b6" stroke-width="8" r="24" stroke-dasharray="112 40" transform="rotate(138.553 50 50)"><animateTransform attributeName="transform" type="rotate" calcMode="linear" values="0 50 50;360 50 50" keyTimes="0;1" dur="1s" begin="0s" repeatCount="indefinite"></animateTransform></circle></svg></div>`;
+    } catch (e) {}
+  }
+  return w;
 }
 
 // Cycles path through URL.origin to ensure that it's the same format we'll
@@ -343,6 +349,7 @@ function exchangeCode(
   redirectPath: string,
   code: string,
   token?: ?Token,
+  verifier: string,
 ): Promise<Object> {
   const redirectUri = redirectOrigin + redirectPath;
   const url = URI.make({
@@ -352,6 +359,7 @@ function exchangeCode(
       app_id: appId,
       redirect_uri: redirectUri,
       code,
+      code_verifier: verifier,
     },
   });
   const headers = {
@@ -598,20 +606,36 @@ class OneGraphAuth {
     return friendlyServiceName(service);
   }
 
-  _makeAuthUrl = (service: Service): string => {
-    const authUrl = URI.make({
-      origin: this.oneGraphOrigin,
-      path: '/oauth/start',
-      query: {
-        service,
-        app_id: this.appId,
-        response_type: 'code',
-        redirect_origin: this._redirectOrigin,
-        redirect_path: this._redirectPath,
-        communication_mode: this._communicationMode,
-      },
+  _makeAuthUrl = ({
+    service,
+    verifier,
+    stateParam,
+    scopes,
+  }: {
+    service: Service,
+    verifier: string,
+    stateParam: string,
+    scopes: ?Array<string>,
+  }): Promise<string> => {
+    return PKCE.codeChallengeOfVerifier(verifier).then(challenge => {
+      const authUrl = URI.make({
+        origin: this.oneGraphOrigin,
+        path: '/oauth/start',
+        query: {
+          service,
+          app_id: this.appId,
+          response_type: 'code',
+          redirect_origin: this._redirectOrigin,
+          redirect_path: this._redirectPath,
+          communication_mode: this._communicationMode,
+          code_challenge: challenge.challenge,
+          code_challenge_method: challenge.method,
+          state: stateParam,
+          ...(scopes ? {scopes: scopes.join(',')} : {}),
+        },
+      });
+      return URI.toString(authUrl);
     });
-    return URI.toString(authUrl);
   };
 
   setToken = (token: Token) => {
@@ -623,6 +647,7 @@ class OneGraphAuth {
   _waitForAuthFinishPostMessage = (
     service: Service,
     stateParam: StateParam,
+    verifier: string,
   ): Promise<AuthResponse> => {
     const postMessageOrigin = normalizeRedirectOrigin(this.oneGraphOrigin);
     return new Promise((resolve, reject) => {
@@ -656,6 +681,7 @@ class OneGraphAuth {
                   this._redirectPath,
                   code,
                   this._accessToken,
+                  verifier,
                 )
                   .then(response => {
                     if (response.error) {
@@ -693,6 +719,7 @@ class OneGraphAuth {
   _waitForAuthFinishRedirect = (
     service: Service,
     stateParam: StateParam,
+    verifier: string,
   ): Promise<AuthResponse> => {
     return new Promise((resolve, reject) => {
       this._intervalIds[service] = setInterval(() => {
@@ -726,6 +753,7 @@ class OneGraphAuth {
                   this._redirectPath,
                   code,
                   this._accessToken,
+                  verifier,
                 )
                   .then(response => {
                     if (response.error) {
@@ -772,20 +800,37 @@ class OneGraphAuth {
     }
     this.cleanup(service);
     const stateParam = makeStateParam();
-    this._authWindows[service] = createAuthWindow(
-      this._makeAuthUrl(service),
-      service,
-      stateParam,
-      scopes,
-    );
+    const verifier = PKCE.generateVerifier();
+    // Create an auth window without a URL initially so that browser associates
+    // window.open with the event (usually a click) that triggered login.
+    // If we waited until _makeAuthUrl's promise resolved, we might trigger
+    // a popup blocker
+    const authWindow = createAuthWindow({service});
+    this._authWindows[service] = authWindow;
     const authFinish =
       this._communicationMode === 'redirect'
         ? this._waitForAuthFinishRedirect
         : this._waitForAuthFinishPostMessage;
-    return authFinish(service, stateParam)
-      .then(result => {
-        this.cleanup(service);
-        return result;
+    window.authWindow = authWindow;
+    const windowUrl = this._makeAuthUrl({
+      service,
+      verifier,
+      stateParam,
+      scopes,
+    });
+    return windowUrl
+      .then(url => {
+        try {
+          authWindow.location.href = url;
+        } catch (e) {
+          const err = new Error('Popup window was closed or blocked');
+          err.type = 'auth-window-closed';
+          throw err;
+        }
+        return authFinish(service, stateParam, verifier).then(result => {
+          this.cleanup(service);
+          return result;
+        });
       })
       .catch(e => {
         this.cleanup(service);
