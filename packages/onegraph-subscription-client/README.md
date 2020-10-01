@@ -67,7 +67,7 @@ const client = new SubscriptionClient(ONEGRAPH_APP_ID, {oneGraphAuth: auth});
 #### With Apollo Client
 
 ```javascript
-import {SubscriptionClient} from 'subscriptions-transport-ws';
+import {SubscriptionClient} from 'onegraph-subscription-client';
 import {ApolloClient} from 'apollo-client';
 import {InMemoryCache} from 'apollo-cache-inmemory';
 
