@@ -1,13 +1,16 @@
 {
   "name": "onegraph-apollo-client",
-  "version": "2.2.2",
+  "version": "2.2.3",
   "description": "Apollo Client for OneGraph",
   "homepage": "https://github.com/OneGraph/onegraph-client/tree/master/packages/onegraph-apollo-client",
   "main": "dist/bundle.umd.js",
   "module": "dist/bundle.es.js",
   "license": "MIT",
   "peerDependencies": {
-    "apollo-boost": "0.1.13"
+    "@apollo/client": "^3.2.2"
+  },
+  "dependencies": {
+    "onegraph-subscription-client": "^2.2.3"
   },
   "devDependencies": {
     "babel-core": "^6.26.0",
