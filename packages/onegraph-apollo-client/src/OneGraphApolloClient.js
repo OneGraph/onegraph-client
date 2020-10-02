@@ -33,6 +33,7 @@ class OneGraphApolloClient extends ApolloClient {
     const subscriptionClient = new SubscriptionClient(oneGraphAuth.appId, {
       oneGraphAuth: oneGraphAuth,
       host: uri.host,
+      lazy: true,
     });
 
     const authMiddleware = new ApolloLink((operation, forward) => {
