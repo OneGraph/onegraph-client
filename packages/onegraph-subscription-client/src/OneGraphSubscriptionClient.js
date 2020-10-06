@@ -7,13 +7,25 @@ import {SubscriptionClient} from 'subscriptions-transport-ws/dist/client';
 
 import type {OneGraphAuth} from 'onegraph-auth';
 
-function getConnectionParams() {
+export type Options = {
+  host?: ?string,
+  oneGraphAuth?: ?OneGraphAuth,
+  timeout?: number,
+  lazy?: boolean,
+  reconnect?: boolean,
+  reconnectionAttempts?: number,
+  connectionCallback?: (?Error) => {},
+  inactivityTimeout?: number,
+  fetchImpl?: any,
+};
+
+function getConnectionParams(options: ?Options) {
   return new Promise(function (resolve, reject) {
     const sessionId = uuid();
     if (sessionId) {
       resolve({sessionId});
     } else {
-      fetchUuid()
+      fetchUuid(options)
         .then(function (uuid) {
           if (!uuid) {
             reject(
@@ -48,17 +60,6 @@ function middleware(auth: ?OneGraphAuth) {
   ];
 }
 
-type Options = {
-  host?: ?string,
-  oneGraphAuth?: ?OneGraphAuth,
-  timeout?: number,
-  lazy?: boolean,
-  reconnect?: boolean,
-  reconnectionAttempts?: number,
-  connectionCallback?: (?Error) => {},
-  inactivityTimeout?: number,
-};
-
 class OneGraphSubscriptionClient extends SubscriptionClient<
   string,
   ?Options,
@@ -91,7 +92,7 @@ class OneGraphSubscriptionClient extends SubscriptionClient<
       `wss://${host}/ws?app_id=${appId}`,
       {
         ...(options || {}),
-        connectionParams: getConnectionParams(),
+        connectionParams: getConnectionParams(options),
       },
       webSocketImpl,
       webSocketProtocols,
