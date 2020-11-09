@@ -215,7 +215,7 @@ function createAuthWindow({
     // A unqiue name prevents orphaned popups from stealing our window.open
     `${service}_${Math.random()}`.replace('.', ''),
     Object.keys(windowOpts)
-      .map((k) => `${k}=${windowOpts[k]}`)
+      .map(k => `${k}=${windowOpts[k]}`)
       .join(','),
   );
   if (!url && w && w.document) {
@@ -278,16 +278,16 @@ function getIsLoggedIn(
 ): boolean {
   const serviceEnum = getServiceEnum(service);
   const loggedInServices =
-    idx(queryResult, (_) => _.data.me.serviceMetadata.loggedInServices) || [];
+    idx(queryResult, _ => _.data.me.serviceMetadata.loggedInServices) || [];
   return !!loggedInServices.find(
-    (serviceInfo) =>
+    serviceInfo =>
       serviceInfo.service === serviceEnum &&
       (!foreignUserId || foreignUserId === serviceInfo.foreignUserId),
   );
 }
 
 function getServiceErrors(errors, service) {
-  return errors.filter((error) => error.path && error.path.includes(service));
+  return errors.filter(error => error.path && error.path.includes(service));
 }
 
 const logoutMutation = `mutation SignOutServicesMutation(
@@ -340,7 +340,7 @@ function fetchQuery(
       ...(token ? {Authorization: `Bearer ${token.accessToken}`} : {}),
     },
     body: JSON.stringify({query, variables}),
-  }).then((response) => response.json());
+  }).then(response => response.json());
 }
 
 function exchangeCode(
@@ -371,7 +371,7 @@ function exchangeCode(
   return fetch(URI.toString(url), {
     method: 'POST',
     headers,
-  }).then((response) => response.json());
+  }).then(response => response.json());
 }
 
 function exchangeRefreshToken(
@@ -397,7 +397,7 @@ function exchangeRefreshToken(
       grant_type: 'refresh_token',
       refresh_token: refreshToken,
     }),
-  }).then((response) => response.json());
+  }).then(response => response.json());
 }
 
 function byteArrayToString(byteArray) {
@@ -529,7 +529,7 @@ class OneGraphAuth {
       this.oneGraphOrigin,
       this.appId,
       refreshToken,
-    ).then((response) => {
+    ).then(response => {
       if (!response) {
         throw new OAuthError({
           error: 'invalid_grant',
@@ -587,7 +587,7 @@ class OneGraphAuth {
     stateParam: string,
     scopes: ?Array<string>,
   }): Promise<string> => {
-    return PKCE.codeChallengeOfVerifier(verifier).then((challenge) => {
+    return PKCE.codeChallengeOfVerifier(verifier).then(challenge => {
       const authUrl = URI.make({
         origin: this.oneGraphOrigin,
         path: '/oauth/start',
@@ -621,7 +621,7 @@ class OneGraphAuth {
   ): Promise<AuthResponse> => {
     const postMessageOrigin = normalizeRedirectOrigin(this.oneGraphOrigin);
     return new Promise((resolve, reject) => {
-      const listener = (event) => {
+      const listener = event => {
         if (normalizeRedirectOrigin(event.origin) !== postMessageOrigin) {
           console.warn(
             'ignoring event for origin',
@@ -653,7 +653,7 @@ class OneGraphAuth {
                   this._accessToken,
                   verifier,
                 )
-                  .then((response) => {
+                  .then(response => {
                     if (response.error) {
                       reject(new OAuthError(response));
                     } else if (
@@ -675,7 +675,7 @@ class OneGraphAuth {
                       reject(new Error('Unexpected result from server'));
                     }
                   })
-                  .catch((e) => reject(e));
+                  .catch(e => reject(e));
               }
             }
           }
@@ -725,7 +725,7 @@ class OneGraphAuth {
                   this._accessToken,
                   verifier,
                 )
-                  .then((response) => {
+                  .then(response => {
                     if (response.error) {
                       reject(new OAuthError(response));
                     } else if (
@@ -743,7 +743,7 @@ class OneGraphAuth {
                       reject(new Error('Unexpected result from server'));
                     }
                   })
-                  .catch((e) => reject(e));
+                  .catch(e => reject(e));
               }
             }
           }
@@ -789,7 +789,7 @@ class OneGraphAuth {
       scopes,
     });
     return windowUrl
-      .then((url) => {
+      .then(url => {
         try {
           authWindow.location.href = url;
         } catch (e) {
@@ -797,12 +797,12 @@ class OneGraphAuth {
           err.type = 'auth-window-closed';
           throw err;
         }
-        return authFinish(service, stateParam, verifier).then((result) => {
+        return authFinish(service, stateParam, verifier).then(result => {
           this.cleanup(service);
           return result;
         });
       })
-      .catch((e) => {
+      .catch(e => {
         this.cleanup(service);
         throw e;
       });
@@ -821,12 +821,9 @@ class OneGraphAuth {
       }
       const foreignUserId =
         typeof args === 'string' ? null : args.foreignUserId;
-      return fetchQuery(
-        this._fetchUrl,
-        loggedInQuery,
-        {},
-        accessToken,
-      ).then((result) => getIsLoggedIn(result, service, foreignUserId));
+      return fetchQuery(this._fetchUrl, loggedInQuery, {}, accessToken).then(
+        result => getIsLoggedIn(result, service, foreignUserId),
+      );
     } else {
       return Promise.resolve(false);
     }
@@ -836,7 +833,7 @@ class OneGraphAuth {
     const accessToken = this._accessToken;
     if (accessToken) {
       return fetchQuery(this._fetchUrl, loggedInQuery, {}, accessToken).then(
-        (result) =>
+        result =>
           ALL_SERVICES.reduce((acc, service) => {
             acc[service] = {isLoggedIn: getIsLoggedIn(result, service)};
             return acc;
@@ -854,8 +851,8 @@ class OneGraphAuth {
 
   allServices = (): Promise<ServicesList> => {
     return fetchQuery(this._fetchUrl, allServicesQuery, {}, null).then(
-      (result) => {
-        return result.data.oneGraph.services.map((serviceInfo) => ({
+      result => {
+        return result.data.oneGraph.services.map(serviceInfo => ({
           serviceEnum: serviceInfo.service,
           service: fromServiceEnum(serviceInfo.service),
           friendlyServiceName: serviceInfo.friendlyServiceName,
@@ -868,10 +865,9 @@ class OneGraphAuth {
     const accessToken = this._accessToken;
     if (accessToken) {
       return fetchQuery(this._fetchUrl, loggedInQuery, {}, accessToken).then(
-        (result) => {
+        result => {
           const loggedInServices =
-            idx(result, (_) => _.data.me.serviceMetadata.loggedInServices) ||
-            [];
+            idx(result, _ => _.data.me.serviceMetadata.loggedInServices) || [];
           return loggedInServices.reduce((acc, serviceInfo) => {
             const serviceKey = fromServiceEnum(serviceInfo.service);
             const loggedInInfo = acc[serviceKey] || {
@@ -926,7 +922,7 @@ class OneGraphAuth {
             },
             accessToken,
           );
-      return signoutPromise.then((result) => {
+      return signoutPromise.then(result => {
         if (
           result.errors &&
           result.errors.length &&
@@ -948,8 +944,8 @@ class OneGraphAuth {
   };
 
   destroy = () => {
-    Object.keys(this._intervalIds).forEach((key) => this.cleanup(key));
-    Object.keys(this._authWindows).forEach((key) => this.cleanup(key));
+    Object.keys(this._intervalIds).forEach(key => this.cleanup(key));
+    Object.keys(this._authWindows).forEach(key => this.cleanup(key));
     this._storage.removeItem(this._storageKey);
     this._accessToken = null;
   };
