@@ -1,6 +1,6 @@
 {
   "name": "onegraph-apollo-server-auth",
-  "version": "3.1.2",
+  "version": "3.3.0",
   "description": "Auth helpers for apollo server and express using OneGraph AuthGuardian",
   "homepage": "https://github.com/OneGraph/onegraph-client/tree/master/packages/onegraph-apollo-server-auth",
   "main": "dist/bundle.umd.js",
