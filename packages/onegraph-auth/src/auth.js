@@ -69,6 +69,7 @@ export type LoggedInServices = {
   [service: string]: {
     serviceEnum: string,
     foreignUserIds: Array<string>,
+    usedTestFlow: boolean,
   },
 };
 
@@ -76,6 +77,7 @@ export type ServiceInfo = {
   service: string,
   serviceEnum: string,
   friendlyServiceName: string,
+  supportsTestFlow: boolean,
 };
 
 export type ServicesList = Array<ServiceInfo>;
@@ -246,6 +248,7 @@ query LoggedInQuery {
       loggedInServices {
         service
         foreignUserId
+        usedTestFlow
       }
     }
   }
@@ -258,6 +261,7 @@ query AllServicesQuery {
     services(filter: {supportsOauthLogin: true}) {
       service
       friendlyServiceName
+      supportsTestFlow
     }
   }
 }
@@ -590,7 +594,7 @@ class OneGraphAuth {
     useTestFlow: ?boolean,
   }): Promise<string> => {
     return PKCE.codeChallengeOfVerifier(verifier).then(challenge => {
-      const query = {
+      const query: any = {
         service,
         app_id: this.appId,
         response_type: 'code',
@@ -803,6 +807,7 @@ class OneGraphAuth {
           authWindow.location.href = url;
         } catch (e) {
           const err = new Error('Popup window was closed or blocked');
+          // $FlowFixMe: create new error interface
           err.type = 'auth-window-closed';
           throw err;
         }
@@ -865,6 +870,7 @@ class OneGraphAuth {
           serviceEnum: serviceInfo.service,
           service: fromServiceEnum(serviceInfo.service),
           friendlyServiceName: serviceInfo.friendlyServiceName,
+          supportsTestFlow: serviceInfo.supportsTestFlow,
         }));
       },
     );
@@ -885,6 +891,7 @@ class OneGraphAuth {
             };
             acc[serviceKey] = {
               ...loggedInInfo,
+              usedTestFlow: serviceInfo.usedTestFlow,
               foreignUserIds: [
                 serviceInfo.foreignUserId,
                 ...loggedInInfo.foreignUserIds,
