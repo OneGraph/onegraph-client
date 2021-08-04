@@ -581,28 +581,35 @@ class OneGraphAuth {
     verifier,
     stateParam,
     scopes,
+    useTestFlow,
   }: {
     service: Service,
     verifier: string,
     stateParam: string,
     scopes: ?Array<string>,
+    useTestFlow: ?boolean,
   }): Promise<string> => {
     return PKCE.codeChallengeOfVerifier(verifier).then(challenge => {
+      const query = {
+        service,
+        app_id: this.appId,
+        response_type: 'code',
+        redirect_origin: this._redirectOrigin,
+        redirect_path: this._redirectPath,
+        communication_mode: this._communicationMode,
+        code_challenge: challenge.challenge,
+        code_challenge_method: challenge.method,
+        state: stateParam,
+
+        ...(scopes ? {scopes: scopes.join(',')} : {}),
+      };
+      if (useTestFlow) {
+        query.test = 'true';
+      }
       const authUrl = URI.make({
         origin: this.oneGraphOrigin,
         path: '/oauth/start',
-        query: {
-          service,
-          app_id: this.appId,
-          response_type: 'code',
-          redirect_origin: this._redirectOrigin,
-          redirect_path: this._redirectPath,
-          communication_mode: this._communicationMode,
-          code_challenge: challenge.challenge,
-          code_challenge_method: challenge.method,
-          state: stateParam,
-          ...(scopes ? {scopes: scopes.join(',')} : {}),
-        },
+        query,
       });
       return URI.toString(authUrl);
     });
@@ -759,7 +766,11 @@ class OneGraphAuth {
     });
   };
 
-  login = (service: Service, scopes: ?Array<string>): Promise<AuthResponse> => {
+  login = (
+    service: Service,
+    scopes: ?Array<string>,
+    useTestFlow?: ?boolean,
+  ): Promise<AuthResponse> => {
     if (!service) {
       throw new Error(
         "Missing required argument. Provide service as first argument to login (e.g. `auth.login('stripe')`).",
@@ -784,6 +795,7 @@ class OneGraphAuth {
       verifier,
       stateParam,
       scopes,
+      useTestFlow,
     });
     return windowUrl
       .then(url => {
