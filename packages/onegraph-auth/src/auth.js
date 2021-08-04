@@ -69,6 +69,7 @@ export type LoggedInServices = {
   [service: string]: {
     serviceEnum: string,
     foreignUserIds: Array<string>,
+    usedTestFlow: boolean,
   },
 };
 
@@ -76,6 +77,7 @@ export type ServiceInfo = {
   service: string,
   serviceEnum: string,
   friendlyServiceName: string,
+  supportsTestFlow: boolean,
 };
 
 export type ServicesList = Array<ServiceInfo>;
@@ -246,6 +248,7 @@ query LoggedInQuery {
       loggedInServices {
         service
         foreignUserId
+        usedTestFlow
       }
     }
   }
@@ -258,6 +261,7 @@ query AllServicesQuery {
     services(filter: {supportsOauthLogin: true}) {
       service
       friendlyServiceName
+      supportsTestFlow
     }
   }
 }
@@ -581,28 +585,35 @@ class OneGraphAuth {
     verifier,
     stateParam,
     scopes,
+    useTestFlow,
   }: {
     service: Service,
     verifier: string,
     stateParam: string,
     scopes: ?Array<string>,
+    useTestFlow: ?boolean,
   }): Promise<string> => {
     return PKCE.codeChallengeOfVerifier(verifier).then(challenge => {
+      const query: any = {
+        service,
+        app_id: this.appId,
+        response_type: 'code',
+        redirect_origin: this._redirectOrigin,
+        redirect_path: this._redirectPath,
+        communication_mode: this._communicationMode,
+        code_challenge: challenge.challenge,
+        code_challenge_method: challenge.method,
+        state: stateParam,
+
+        ...(scopes ? {scopes: scopes.join(',')} : {}),
+      };
+      if (useTestFlow) {
+        query.test = 'true';
+      }
       const authUrl = URI.make({
         origin: this.oneGraphOrigin,
         path: '/oauth/start',
-        query: {
-          service,
-          app_id: this.appId,
-          response_type: 'code',
-          redirect_origin: this._redirectOrigin,
-          redirect_path: this._redirectPath,
-          communication_mode: this._communicationMode,
-          code_challenge: challenge.challenge,
-          code_challenge_method: challenge.method,
-          state: stateParam,
-          ...(scopes ? {scopes: scopes.join(',')} : {}),
-        },
+        query,
       });
       return URI.toString(authUrl);
     });
@@ -759,7 +770,11 @@ class OneGraphAuth {
     });
   };
 
-  login = (service: Service, scopes: ?Array<string>): Promise<AuthResponse> => {
+  login = (
+    service: Service,
+    scopes: ?Array<string>,
+    useTestFlow?: ?boolean,
+  ): Promise<AuthResponse> => {
     if (!service) {
       throw new Error(
         "Missing required argument. Provide service as first argument to login (e.g. `auth.login('stripe')`).",
@@ -784,6 +799,7 @@ class OneGraphAuth {
       verifier,
       stateParam,
       scopes,
+      useTestFlow,
     });
     return windowUrl
       .then(url => {
@@ -791,6 +807,7 @@ class OneGraphAuth {
           authWindow.location.href = url;
         } catch (e) {
           const err = new Error('Popup window was closed or blocked');
+          // $FlowFixMe: create new error interface
           err.type = 'auth-window-closed';
           throw err;
         }
@@ -853,6 +870,7 @@ class OneGraphAuth {
           serviceEnum: serviceInfo.service,
           service: fromServiceEnum(serviceInfo.service),
           friendlyServiceName: serviceInfo.friendlyServiceName,
+          supportsTestFlow: serviceInfo.supportsTestFlow,
         }));
       },
     );
@@ -873,6 +891,7 @@ class OneGraphAuth {
             };
             acc[serviceKey] = {
               ...loggedInInfo,
+              usedTestFlow: serviceInfo.usedTestFlow,
               foreignUserIds: [
                 serviceInfo.foreignUserId,
                 ...loggedInInfo.foreignUserIds,
