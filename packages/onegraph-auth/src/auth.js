@@ -565,10 +565,15 @@ class OneGraphAuth {
     delete this._authWindows[service];
   };
 
-  cleanup: (service: Service) => void = (service: Service) => {
+  cleanup: (service: Service, keepWindowOpen?: boolean) => void = (
+    service: Service,
+    keepWindowOpen?: boolean,
+  ) => {
     this._clearInterval(service);
     this._clearMessageListener(service);
-    this.closeAuthWindow(service);
+    if (!keepWindowOpen) {
+      this.closeAuthWindow(service);
+    }
   };
 
   accessToken: () => ?Token = (): ?Token => this._accessToken;
@@ -634,7 +639,7 @@ class OneGraphAuth {
     });
   };
 
-  authHeaders: () => {Authorization?: string, ...} = (): {
+  authHeaders: () => {Authorization?: string} = (): {
     Authorization?: string,
   } => {
     if (this._accessToken) {
@@ -654,7 +659,6 @@ class OneGraphAuth {
     stateParam: string,
     useTestFlow: ?boolean,
     verifier: string,
-    ...
   }) => Promise<string> = ({
     service,
     verifier,
@@ -679,7 +683,6 @@ class OneGraphAuth {
         code_challenge: challenge.challenge,
         code_challenge_method: challenge.method,
         state: stateParam,
-
         ...(scopes ? {scopes: scopes.join(',')} : {}),
       };
       if (useTestFlow) {
@@ -720,15 +723,16 @@ class OneGraphAuth {
       const listener = (event) => {
         const message = parseEvent(event);
         if (message && message.version <= 2) {
-          const {code, state} = message;
+          const {state} = message;
           if (state !== stateParam) {
             console.warn('Invalid state param, skipping event');
           } else {
+            const {error, error_description, code} = message;
             if (!code) {
               reject(
                 new OAuthError({
-                  error: 'invalid_grant',
-                  error_description: 'Missing code',
+                  error: error || 'invalid_grant',
+                  error_description: error_description || 'Missing code',
                 }),
               );
             } else {
@@ -908,13 +912,13 @@ class OneGraphAuth {
         });
       })
       .catch((e) => {
-        this.cleanup(service);
+        this.cleanup(service, true);
         throw e;
       });
   };
 
   isLoggedIn: (
-    args: Service | {foreignUserId?: ?string, service: string, ...},
+    args: Service | {foreignUserId?: ?string, service: string},
   ) => Promise<boolean> = (
     args: Service | {service: string, foreignUserId?: ?string},
   ): Promise<boolean> => {

@@ -29,7 +29,7 @@ OAuthError.prototype = (Object.create(Error.prototype, {
     writable: true,
     configurable: true,
   },
-}): {constructor: typeof Error | Class<Error>, ...});
+}): {constructor: typeof Error | Class<Error>});
 
 if (Object.setPrototypeOf) {
   Object.setPrototypeOf(OAuthError, Error);
