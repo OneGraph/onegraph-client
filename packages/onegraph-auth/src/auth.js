@@ -11,20 +11,33 @@ const idx = require('idx');
 import type {Storage} from './storage';
 
 export type Service =
+  | 'adroll'
+  | 'asana'
   | 'box'
+  | 'contentful'
+  | 'dev-to'
   | 'dribbble'
   | 'dropbox'
+  | 'eggheadio'
   | 'eventil'
   | 'facebook'
+  | 'firebase'
   | 'github'
   | 'gmail'
   | 'google'
+  | 'google-ads'
+  | 'google-analytics'
   | 'google-calendar'
   | 'google-compute'
   | 'google-docs'
+  | 'google-search-console'
   | 'google-translate'
   | 'hubspot'
   | 'intercom'
+  | 'mailchimp'
+  | 'meetup'
+  | 'netlify'
+  | 'product-hunt'
   | 'quickbooks'
   | 'salesforce'
   | 'slack'
@@ -32,7 +45,9 @@ export type Service =
   | 'stripe'
   | 'trello'
   | 'twilio'
+  | 'twitch-tv'
   | 'twitter'
+  | 'ynab'
   | 'youtube'
   | 'zeit'
   | 'zendesk';
@@ -94,20 +109,33 @@ type StateParam = string;
 const POLL_INTERVAL = 35;
 
 const ALL_SERVICES = [
+  'adroll',
+  'asana',
   'box',
+  'contentful',
+  'dev-to',
   'dribbble',
   'dropbox',
+  'eggheadio',
   'eventil',
   'facebook',
+  'firebase',
   'github',
   'gmail',
   'google',
+  'google-ads',
+  'google-analytics',
   'google-calendar',
   'google-compute',
   'google-docs',
+  'google-search-console',
   'google-translate',
   'hubspot',
   'intercom',
+  'mailchimp',
+  'meetup',
+  'netlify',
+  'product-hunt',
   'quickbooks',
   'salesforce',
   'slack',
@@ -115,7 +143,9 @@ const ALL_SERVICES = [
   'stripe',
   'trello',
   'twilio',
+  'twitch-tv',
   'twitter',
+  'ynab',
   'youtube',
   'zeit',
   'zendesk',
@@ -123,36 +153,62 @@ const ALL_SERVICES = [
 
 function friendlyServiceName(service: Service): string {
   switch (service) {
+    case 'adroll':
+      return 'Adroll';
+    case 'asana':
+      return 'Asana';
     case 'box':
       return 'Box';
+    case 'dev-to':
+      return 'Dev.to';
     case 'dribbble':
       return 'Dribbble';
     case 'dropbox':
       return 'Dropbox';
+    case 'contentful':
+      return 'Contentful';
+    case 'eggheadio':
+      return 'Egghead.io';
     case 'eventil':
       return 'Eventil';
     case 'facebook':
       return 'Facebook';
+    case 'firebase':
+      return 'Firebase';
     case 'github':
       return 'GitHub';
     case 'gmail':
       return 'Gmail';
     case 'google':
       return 'Google';
+    case 'google-ads':
+      return 'Google Ads';
+    case 'google-analytics':
+      return 'Google Analytics';
     case 'google-calendar':
       return 'Google Calendar';
     case 'google-compute':
       return 'Google Compute';
     case 'google-docs':
       return 'Google Docs';
+    case 'google-search-console':
+      return 'Google Search Console';
     case 'google-translate':
       return 'Google Translate';
     case 'hubspot':
-      return 'HubSpot';
+      return 'Hubspot';
     case 'intercom':
       return 'Intercom';
+    case 'mailchimp':
+      return 'Mailchimp';
+    case 'meetup':
+      return 'Meetup';
+    case 'netlify':
+      return 'Netlify';
+    case 'product-hunt':
+      return 'Product Hunt';
     case 'quickbooks':
-      return 'Quickbooks';
+      return 'QuickBooks';
     case 'salesforce':
       return 'Salesforce';
     case 'slack':
@@ -167,10 +223,14 @@ function friendlyServiceName(service: Service): string {
       return 'Twilio';
     case 'twitter':
       return 'Twitter';
+    case 'twitch-tv':
+      return 'Twitch';
+    case 'ynab':
+      return 'You Need a Budget';
     case 'youtube':
       return 'YouTube';
     case 'zeit':
-      return 'Zeit';
+      return 'Vercel';
     case 'zendesk':
       return 'Zendesk';
     default:
@@ -769,15 +829,20 @@ class OneGraphAuth {
     });
   };
 
+  /**
+   * @throws {OAuthError}
+   */
   login = (
     service: Service,
     scopes: ?Array<string>,
     useTestFlow?: ?boolean,
   ): Promise<AuthResponse> => {
     if (!service) {
-      throw new Error(
-        "Missing required argument. Provide service as first argument to login (e.g. `auth.login('stripe')`).",
-      );
+      throw new OAuthError({
+        error: 'invalid_request',
+        error_description:
+          "Missing required argument. Provide service as first argument to login (e.g. `auth.login('stripe')`).",
+      });
     }
     this.cleanup(service);
     const stateParam = makeStateParam();
@@ -792,7 +857,6 @@ class OneGraphAuth {
       this._communicationMode === 'redirect'
         ? this._waitForAuthFinishRedirect
         : this._waitForAuthFinishPostMessage;
-    window.authWindow = authWindow;
     const windowUrl = this._makeAuthUrl({
       service,
       verifier,
@@ -805,10 +869,10 @@ class OneGraphAuth {
         try {
           authWindow.location.href = url;
         } catch (e) {
-          const err = new Error('Popup window was closed or blocked');
-          // $FlowFixMe: create new error interface
-          err.type = 'auth-window-closed';
-          throw err;
+          throw new OAuthError({
+            error: 'invalid_response',
+            error_description: 'Popup window was closed or blocked',
+          });
         }
         return authFinish(service, stateParam, verifier).then(result => {
           this.cleanup(service);

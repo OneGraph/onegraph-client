@@ -1,3 +1,5 @@
+// @flow
+
 type ErrorObject = {
   error: string,
   error_description: string,
