@@ -22,11 +22,11 @@ export function findMissingAuthServices(results: any) {
   }
 
   const missingServiceErrors = errors.filter(
-    error => idx(error, _ => _.extensions.type) === 'auth/missing-auth',
+    (error) => idx(error, (_) => _.extensions.type) === 'auth/missing-auth',
   );
 
   const missingServices = missingServiceErrors
-    .map(error => idx(error, _ => _.extensions.service))
+    .map((error) => idx(error, (_) => _.extensions.service))
     .filter(Boolean);
 
   return missingServices;

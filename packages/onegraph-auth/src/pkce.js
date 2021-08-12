@@ -43,10 +43,7 @@ function sha256(s: string): Promise<Uint8Array> {
 }
 
 function urlSafeBase64(s: string): string {
-  return s
-    .replace(/\+/g, '-')
-    .replace(/\//g, '_')
-    .replace(/=/g, '');
+  return s.replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
 }
 
 function codeChallengeOfVerifier(verifier: string): Promise<CodeChallenge> {
@@ -56,7 +53,7 @@ function codeChallengeOfVerifier(verifier: string): Promise<CodeChallenge> {
       method: 'plain',
     });
   } else {
-    return sha256(verifier).then(s => {
+    return sha256(verifier).then((s) => {
       return {
         challenge: urlSafeBase64(
           btoa(String.fromCharCode(...Array.from(new Uint8Array(s)))),

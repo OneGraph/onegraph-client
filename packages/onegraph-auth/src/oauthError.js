@@ -10,9 +10,7 @@ function OAuthError(
   fileName?: string,
   lineNumber?: number,
 ): Error {
-  const message = `OAuthError: ${errorObject.error} ${
-    errorObject.error_description
-  }`;
+  const message = `OAuthError: ${errorObject.error} ${errorObject.error_description}`;
   // $FlowFixMe
   const instance = new Error(message, fileName, lineNumber);
   // $FlowFixMe
@@ -31,7 +29,7 @@ OAuthError.prototype = (Object.create(Error.prototype, {
     writable: true,
     configurable: true,
   },
-}): { constructor: typeof Error | Class<Error>, ... });
+}): {constructor: typeof Error | Class<Error>, ...});
 
 if (Object.setPrototypeOf) {
   Object.setPrototypeOf(OAuthError, Error);
