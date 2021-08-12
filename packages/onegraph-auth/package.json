@@ -1,6 +1,6 @@
 {
   "name": "onegraph-auth",
-  "version": "3.4.0",
+  "version": "4.0.0",
   "description": "Auth helpers for OneGraph",
   "homepage": "https://github.com/OneGraph/onegraph-client/tree/master/packages/onegraph-auth",
   "main": "dist/bundle.umd.js",
