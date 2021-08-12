@@ -100,7 +100,7 @@ declare class OneGraphAuth {
   setToken: (token: Token) => void;
   login: (
     service: Service,
-    scopes: Array<string> | null,
+    scopes?: Array<string> | null,
     useTestFlow?: boolean | null,
   ) => Promise<AuthResponse>;
   isLoggedIn: (
