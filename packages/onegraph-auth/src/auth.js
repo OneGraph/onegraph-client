@@ -42,7 +42,6 @@ type CommunicationMode = 'post_message' | 'redirect';
 export type Opts = {
   oneGraphOrigin?: string,
   appId: string,
-  service: Service,
   oauthFinishOrigin?: string,
   oauthFinishPath?: string,
   saveAuthToStorage?: boolean,
@@ -495,7 +494,7 @@ class OneGraphAuth {
     delete this._messageListeners[service];
   };
 
-  _clearAuthWindow = (service: Service) => {
+  closeAuthWindow = (service: Service) => {
     const w = this._authWindows[service];
     w && w.close();
     delete this._authWindows[service];
@@ -504,7 +503,7 @@ class OneGraphAuth {
   cleanup = (service: Service) => {
     this._clearInterval(service);
     this._clearMessageListener(service);
-    this._clearAuthWindow(service);
+    this.closeAuthWindow(service);
   };
 
   accessToken = (): ?Token => this._accessToken;
