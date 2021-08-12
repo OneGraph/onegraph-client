@@ -395,13 +395,16 @@ function fetchQuery(
   variables: {[key: string]: any},
   token?: ?Token,
 ): Promise<Object> {
+  const headers: {[key: string]: string} = {
+    'Content-Type': 'application/json',
+    Accept: 'application/json',
+  };
+  if (token) {
+    headers.Authorization = `Bearer ${token.accessToken}`;
+  }
   return fetch(fetchUrl, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Accept: 'application/json',
-      ...(token ? {Authorization: `Bearer ${token.accessToken}`} : {}),
-    },
+    headers: headers,
     body: JSON.stringify({query, variables}),
   }).then(response => response.json());
 }
@@ -426,11 +429,13 @@ function exchangeCode(
       code_verifier: verifier,
     },
   });
-  const headers = {
+  const headers: {[key: string]: string} = {
     'Content-Type': 'application/json',
     Accept: 'application/json',
-    ...(token ? {Authorization: `Bearer ${token.accessToken}`} : {}),
   };
+  if (token) {
+    headers.Authorization = `Bearer ${token.accessToken}`;
+  }
   return fetch(URI.toString(url), {
     method: 'POST',
     headers,
@@ -509,7 +514,7 @@ class OneGraphAuth {
   _storageKey: string;
   _storage: Storage;
   _communicationMode: CommunicationMode;
-  supportedServices = ALL_SERVICES;
+  supportedServices: Array<string> = ALL_SERVICES;
 
   constructor(opts: Opts) {
     const {appId, oauthFinishOrigin, oauthFinishPath} = opts;
@@ -540,12 +545,12 @@ class OneGraphAuth {
     this._communicationMode = opts.communicationMode || 'post_message';
   }
 
-  _clearInterval = (service: Service) => {
+  _clearInterval: ((service: Service) => void) = (service: Service) => {
     clearInterval(this._intervalIds[service]);
     delete this._intervalIds[service];
   };
 
-  _clearMessageListener = (service: Service) => {
+  _clearMessageListener: ((service: Service) => void) = (service: Service) => {
     window.removeEventListener(
       'message',
       this._messageListeners[service],
@@ -554,28 +559,28 @@ class OneGraphAuth {
     delete this._messageListeners[service];
   };
 
-  closeAuthWindow = (service: Service) => {
+  closeAuthWindow: ((service: Service) => void) = (service: Service) => {
     const w = this._authWindows[service];
     w && w.close();
     delete this._authWindows[service];
   };
 
-  cleanup = (service: Service) => {
+  cleanup: ((service: Service) => void) = (service: Service) => {
     this._clearInterval(service);
     this._clearMessageListener(service);
     this.closeAuthWindow(service);
   };
 
-  accessToken = (): ?Token => this._accessToken;
+  accessToken: (() => ?Token) = (): ?Token => this._accessToken;
 
-  tokenExpireDate = (): ?Date => {
+  tokenExpireDate: (() => ?Date) = (): ?Date => {
     if (!this._accessToken) {
       return null;
     }
     return new Date(this._accessToken.expireDate);
   };
 
-  tokenExpiresSecondsFromNow = (): ?number => {
+  tokenExpiresSecondsFromNow: (() => ?number) = (): ?number => {
     const expireDate = this.tokenExpireDate();
     if (!expireDate) {
       return null;
@@ -587,7 +592,7 @@ class OneGraphAuth {
     return Math.floor(seconds / 1000);
   };
 
-  refreshToken = (refreshToken: string): Promise<?Token> => {
+  refreshToken: ((refreshToken: string) => Promise<?Token>) = (refreshToken: string): Promise<?Token> => {
     return exchangeRefreshToken(
       this.oneGraphOrigin,
       this.appId,
@@ -627,7 +632,7 @@ class OneGraphAuth {
     });
   };
 
-  authHeaders = (): {Authorization?: string} => {
+  authHeaders: (() => { Authorization?: string, ... }) = (): {Authorization?: string} => {
     if (this._accessToken) {
       return {Authorization: `Bearer ${this._accessToken.accessToken}`};
     } else {
@@ -639,7 +644,16 @@ class OneGraphAuth {
     return friendlyServiceName(service);
   }
 
-  _makeAuthUrl = ({
+  _makeAuthUrl: ((
+  {
+    scopes: ?Array<string>,
+    service: Service,
+    stateParam: string,
+    useTestFlow: ?boolean,
+    verifier: string,
+    ...
+  }
+) => Promise<string>) = ({
     service,
     verifier,
     stateParam,
@@ -678,13 +692,17 @@ class OneGraphAuth {
     });
   };
 
-  setToken = (token: Token) => {
+  setToken: ((token: Token) => void) = (token: Token) => {
     this._accessToken = token;
     const {refreshToken, ...storableToken} = token;
     this._storage.setItem(this._storageKey, JSON.stringify(storableToken));
   };
 
-  _waitForAuthFinishPostMessage = (
+  _waitForAuthFinishPostMessage: ((
+  service: Service,
+  stateParam: StateParam,
+  verifier: string
+) => Promise<AuthResponse>) = (
     service: Service,
     stateParam: StateParam,
     verifier: string,
@@ -753,7 +771,11 @@ class OneGraphAuth {
     });
   };
 
-  _waitForAuthFinishRedirect = (
+  _waitForAuthFinishRedirect: ((
+  service: Service,
+  stateParam: StateParam,
+  verifier: string
+) => Promise<AuthResponse>) = (
     service: Service,
     stateParam: StateParam,
     verifier: string,
@@ -832,7 +854,11 @@ class OneGraphAuth {
   /**
    * @throws {OAuthError}
    */
-  login = (
+  login: ((
+  service: Service,
+  scopes: ?Array<string>,
+  useTestFlow?: ?boolean
+) => Promise<AuthResponse>) = (
     service: Service,
     scopes: ?Array<string>,
     useTestFlow?: ?boolean,
@@ -885,7 +911,9 @@ class OneGraphAuth {
       });
   };
 
-  isLoggedIn = (
+  isLoggedIn: ((
+  args: Service | { foreignUserId?: ?string, service: string, ... }
+) => Promise<boolean>) = (
     args: Service | {service: string, foreignUserId?: ?string},
   ): Promise<boolean> => {
     const accessToken = this._accessToken;
@@ -906,7 +934,7 @@ class OneGraphAuth {
     }
   };
 
-  servicesStatus = (): Promise<ServicesStatus> => {
+  servicesStatus: (() => Promise<ServicesStatus>) = (): Promise<ServicesStatus> => {
     const accessToken = this._accessToken;
     if (accessToken) {
       return fetchQuery(this._fetchUrl, loggedInQuery, {}, accessToken).then(
@@ -926,7 +954,7 @@ class OneGraphAuth {
     }
   };
 
-  allServices = (): Promise<ServicesList> => {
+  allServices: (() => Promise<ServicesList>) = (): Promise<ServicesList> => {
     return fetchQuery(this._fetchUrl, allServicesQuery, {}, null).then(
       result => {
         return result.data.oneGraph.services.map(serviceInfo => ({
@@ -939,7 +967,7 @@ class OneGraphAuth {
     );
   };
 
-  loggedInServices = (): Promise<LoggedInServices> => {
+  loggedInServices: (() => Promise<LoggedInServices>) = (): Promise<LoggedInServices> => {
     const accessToken = this._accessToken;
     if (accessToken) {
       return fetchQuery(this._fetchUrl, loggedInQuery, {}, accessToken).then(
@@ -969,7 +997,7 @@ class OneGraphAuth {
     }
   };
 
-  logout = (
+  logout: ((service: Service, foreignUserId?: ?string) => Promise<LogoutResult>) = (
     service: Service,
     foreignUserId?: ?string,
   ): Promise<LogoutResult> => {
@@ -1022,14 +1050,14 @@ class OneGraphAuth {
     }
   };
 
-  destroy = () => {
+  destroy: (() => void) = () => {
     Object.keys(this._intervalIds).forEach(key => this.cleanup(key));
     Object.keys(this._authWindows).forEach(key => this.cleanup(key));
     this._storage.removeItem(this._storageKey);
     this._accessToken = null;
   };
 
-  findMissingAuthServices = findMissingAuthServices;
+  findMissingAuthServices: any = findMissingAuthServices;
 }
 
 export default OneGraphAuth;

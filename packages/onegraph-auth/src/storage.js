@@ -8,13 +8,13 @@ export interface Storage {
 
 export class InMemoryStorage implements Storage {
   state: {[key: string]: string} = {};
-  getItem = (key: string): ?string => {
+  getItem: ((key: string) => ?string) = (key: string): ?string => {
     return this.state[key];
   };
-  setItem = (key: string, value: string): void => {
+  setItem: ((key: string, value: string) => void) = (key: string, value: string): void => {
     this.state[key] = value;
   };
-  removeItem = (key: string): void => {
+  removeItem: ((key: string) => void) = (key: string): void => {
     delete this.state[key];
   };
 }
@@ -35,7 +35,7 @@ export class LocalStorage implements Storage {
 
 const DEBUG_KEY = '__og_debug';
 
-export function hasLocalStorage() {
+export function hasLocalStorage(): boolean {
   try {
     localStorage.setItem(DEBUG_KEY, 'debug');
     localStorage.removeItem(DEBUG_KEY);
