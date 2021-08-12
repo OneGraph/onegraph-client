@@ -2,8 +2,21 @@ const babel = require('rollup-plugin-babel');
 const postcss = require('rollup-plugin-postcss');
 const resolve = require('@rollup/plugin-node-resolve');
 const commonjs = require('@rollup/plugin-commonjs');
+const fs = require('fs');
+const path = require('path');
 
 const rollup = require('rollup');
+
+function copyTsDefinitions() {
+  for (const file of fs.readdirSync('src')) {
+    if (file.endsWith('.d.ts')) {
+      fs.copyFileSync(
+        path.resolve(`src/${file}`),
+        path.resolve(`dist/${file}`),
+      );
+    }
+  }
+}
 
 function createBundle() {
   return rollup.rollup({
@@ -41,7 +54,7 @@ module.exports = async function build(moduleName) {
     await buildForFormat(bundle, moduleName, 'umd');
     await buildForFormat(bundle, moduleName, 'es');
     await buildForFormat(bundle, moduleName, 'cjs');
-
+    copyTsDefinitions();
     console.log(`finished building ${moduleName}`);
   } catch (e) {
     console.error(e);

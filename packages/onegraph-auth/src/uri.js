@@ -66,7 +66,7 @@ function setPath(uri: URI, path: string): URI {
 
 function queryToString(query: Query): string {
   return Object.keys(query)
-    .map(k => `${k}=${query[k]}`)
+    .map((k) => `${k}=${query[k]}`)
     .join('&');
 }
 

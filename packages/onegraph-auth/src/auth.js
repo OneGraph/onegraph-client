@@ -11,20 +11,33 @@ const idx = require('idx');
 import type {Storage} from './storage';
 
 export type Service =
+  | 'adroll'
+  | 'asana'
   | 'box'
+  | 'contentful'
+  | 'dev-to'
   | 'dribbble'
   | 'dropbox'
+  | 'eggheadio'
   | 'eventil'
   | 'facebook'
+  | 'firebase'
   | 'github'
   | 'gmail'
   | 'google'
+  | 'google-ads'
+  | 'google-analytics'
   | 'google-calendar'
   | 'google-compute'
   | 'google-docs'
+  | 'google-search-console'
   | 'google-translate'
   | 'hubspot'
   | 'intercom'
+  | 'mailchimp'
+  | 'meetup'
+  | 'netlify'
+  | 'product-hunt'
   | 'quickbooks'
   | 'salesforce'
   | 'slack'
@@ -32,7 +45,9 @@ export type Service =
   | 'stripe'
   | 'trello'
   | 'twilio'
+  | 'twitch-tv'
   | 'twitter'
+  | 'ynab'
   | 'youtube'
   | 'zeit'
   | 'zendesk';
@@ -42,7 +57,6 @@ type CommunicationMode = 'post_message' | 'redirect';
 export type Opts = {
   oneGraphOrigin?: string,
   appId: string,
-  service: Service,
   oauthFinishOrigin?: string,
   oauthFinishPath?: string,
   saveAuthToStorage?: boolean,
@@ -95,20 +109,33 @@ type StateParam = string;
 const POLL_INTERVAL = 35;
 
 const ALL_SERVICES = [
+  'adroll',
+  'asana',
   'box',
+  'contentful',
+  'dev-to',
   'dribbble',
   'dropbox',
+  'eggheadio',
   'eventil',
   'facebook',
+  'firebase',
   'github',
   'gmail',
   'google',
+  'google-ads',
+  'google-analytics',
   'google-calendar',
   'google-compute',
   'google-docs',
+  'google-search-console',
   'google-translate',
   'hubspot',
   'intercom',
+  'mailchimp',
+  'meetup',
+  'netlify',
+  'product-hunt',
   'quickbooks',
   'salesforce',
   'slack',
@@ -116,7 +143,9 @@ const ALL_SERVICES = [
   'stripe',
   'trello',
   'twilio',
+  'twitch-tv',
   'twitter',
+  'ynab',
   'youtube',
   'zeit',
   'zendesk',
@@ -124,36 +153,62 @@ const ALL_SERVICES = [
 
 function friendlyServiceName(service: Service): string {
   switch (service) {
+    case 'adroll':
+      return 'Adroll';
+    case 'asana':
+      return 'Asana';
     case 'box':
       return 'Box';
+    case 'dev-to':
+      return 'Dev.to';
     case 'dribbble':
       return 'Dribbble';
     case 'dropbox':
       return 'Dropbox';
+    case 'contentful':
+      return 'Contentful';
+    case 'eggheadio':
+      return 'Egghead.io';
     case 'eventil':
       return 'Eventil';
     case 'facebook':
       return 'Facebook';
+    case 'firebase':
+      return 'Firebase';
     case 'github':
       return 'GitHub';
     case 'gmail':
       return 'Gmail';
     case 'google':
       return 'Google';
+    case 'google-ads':
+      return 'Google Ads';
+    case 'google-analytics':
+      return 'Google Analytics';
     case 'google-calendar':
       return 'Google Calendar';
     case 'google-compute':
       return 'Google Compute';
     case 'google-docs':
       return 'Google Docs';
+    case 'google-search-console':
+      return 'Google Search Console';
     case 'google-translate':
       return 'Google Translate';
     case 'hubspot':
-      return 'HubSpot';
+      return 'Hubspot';
     case 'intercom':
       return 'Intercom';
+    case 'mailchimp':
+      return 'Mailchimp';
+    case 'meetup':
+      return 'Meetup';
+    case 'netlify':
+      return 'Netlify';
+    case 'product-hunt':
+      return 'Product Hunt';
     case 'quickbooks':
-      return 'Quickbooks';
+      return 'QuickBooks';
     case 'salesforce':
       return 'Salesforce';
     case 'slack':
@@ -168,10 +223,14 @@ function friendlyServiceName(service: Service): string {
       return 'Twilio';
     case 'twitter':
       return 'Twitter';
+    case 'twitch-tv':
+      return 'Twitch';
+    case 'ynab':
+      return 'You Need a Budget';
     case 'youtube':
       return 'YouTube';
     case 'zeit':
-      return 'Zeit';
+      return 'Vercel';
     case 'zendesk':
       return 'Zendesk';
     default:
@@ -217,7 +276,7 @@ function createAuthWindow({
     // A unqiue name prevents orphaned popups from stealing our window.open
     `${service}_${Math.random()}`.replace('.', ''),
     Object.keys(windowOpts)
-      .map(k => `${k}=${windowOpts[k]}`)
+      .map((k) => `${k}=${windowOpts[k]}`)
       .join(','),
   );
   if (!url && w && w.document) {
@@ -282,16 +341,16 @@ function getIsLoggedIn(
 ): boolean {
   const serviceEnum = getServiceEnum(service);
   const loggedInServices =
-    idx(queryResult, _ => _.data.me.serviceMetadata.loggedInServices) || [];
+    idx(queryResult, (_) => _.data.me.serviceMetadata.loggedInServices) || [];
   return !!loggedInServices.find(
-    serviceInfo =>
+    (serviceInfo) =>
       serviceInfo.service === serviceEnum &&
       (!foreignUserId || foreignUserId === serviceInfo.foreignUserId),
   );
 }
 
 function getServiceErrors(errors, service) {
-  return errors.filter(error => error.path && error.path.includes(service));
+  return errors.filter((error) => error.path && error.path.includes(service));
 }
 
 const logoutMutation = `mutation SignOutServicesMutation(
@@ -336,15 +395,18 @@ function fetchQuery(
   variables: {[key: string]: any},
   token?: ?Token,
 ): Promise<Object> {
+  const headers: {[key: string]: string} = {
+    'Content-Type': 'application/json',
+    Accept: 'application/json',
+  };
+  if (token) {
+    headers.Authorization = `Bearer ${token.accessToken}`;
+  }
   return fetch(fetchUrl, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Accept: 'application/json',
-      ...(token ? {Authorization: `Bearer ${token.accessToken}`} : {}),
-    },
+    headers: headers,
     body: JSON.stringify({query, variables}),
-  }).then(response => response.json());
+  }).then((response) => response.json());
 }
 
 function exchangeCode(
@@ -367,15 +429,17 @@ function exchangeCode(
       code_verifier: verifier,
     },
   });
-  const headers = {
+  const headers: {[key: string]: string} = {
     'Content-Type': 'application/json',
     Accept: 'application/json',
-    ...(token ? {Authorization: `Bearer ${token.accessToken}`} : {}),
   };
+  if (token) {
+    headers.Authorization = `Bearer ${token.accessToken}`;
+  }
   return fetch(URI.toString(url), {
     method: 'POST',
     headers,
-  }).then(response => response.json());
+  }).then((response) => response.json());
 }
 
 function exchangeRefreshToken(
@@ -401,7 +465,7 @@ function exchangeRefreshToken(
       grant_type: 'refresh_token',
       refresh_token: refreshToken,
     }),
-  }).then(response => response.json());
+  }).then((response) => response.json());
 }
 
 function byteArrayToString(byteArray) {
@@ -450,7 +514,7 @@ class OneGraphAuth {
   _storageKey: string;
   _storage: Storage;
   _communicationMode: CommunicationMode;
-  supportedServices = ALL_SERVICES;
+  supportedServices: Array<string> = ALL_SERVICES;
 
   constructor(opts: Opts) {
     const {appId, oauthFinishOrigin, oauthFinishPath} = opts;
@@ -481,12 +545,12 @@ class OneGraphAuth {
     this._communicationMode = opts.communicationMode || 'post_message';
   }
 
-  _clearInterval = (service: Service) => {
+  _clearInterval: (service: Service) => void = (service: Service) => {
     clearInterval(this._intervalIds[service]);
     delete this._intervalIds[service];
   };
 
-  _clearMessageListener = (service: Service) => {
+  _clearMessageListener: (service: Service) => void = (service: Service) => {
     window.removeEventListener(
       'message',
       this._messageListeners[service],
@@ -495,28 +559,33 @@ class OneGraphAuth {
     delete this._messageListeners[service];
   };
 
-  _clearAuthWindow = (service: Service) => {
+  closeAuthWindow: (service: Service) => void = (service: Service) => {
     const w = this._authWindows[service];
     w && w.close();
     delete this._authWindows[service];
   };
 
-  cleanup = (service: Service) => {
+  cleanup: (service: Service, keepWindowOpen?: boolean) => void = (
+    service: Service,
+    keepWindowOpen?: boolean,
+  ) => {
     this._clearInterval(service);
     this._clearMessageListener(service);
-    this._clearAuthWindow(service);
+    if (!keepWindowOpen) {
+      this.closeAuthWindow(service);
+    }
   };
 
-  accessToken = (): ?Token => this._accessToken;
+  accessToken: () => ?Token = (): ?Token => this._accessToken;
 
-  tokenExpireDate = (): ?Date => {
+  tokenExpireDate: () => ?Date = (): ?Date => {
     if (!this._accessToken) {
       return null;
     }
     return new Date(this._accessToken.expireDate);
   };
 
-  tokenExpiresSecondsFromNow = (): ?number => {
+  tokenExpiresSecondsFromNow: () => ?number = (): ?number => {
     const expireDate = this.tokenExpireDate();
     if (!expireDate) {
       return null;
@@ -528,12 +597,14 @@ class OneGraphAuth {
     return Math.floor(seconds / 1000);
   };
 
-  refreshToken = (refreshToken: string): Promise<?Token> => {
+  refreshToken: (refreshToken: string) => Promise<?Token> = (
+    refreshToken: string,
+  ): Promise<?Token> => {
     return exchangeRefreshToken(
       this.oneGraphOrigin,
       this.appId,
       refreshToken,
-    ).then(response => {
+    ).then((response) => {
       if (!response) {
         throw new OAuthError({
           error: 'invalid_grant',
@@ -568,7 +639,9 @@ class OneGraphAuth {
     });
   };
 
-  authHeaders = (): {Authorization?: string} => {
+  authHeaders: () => {Authorization?: string} = (): {
+    Authorization?: string,
+  } => {
     if (this._accessToken) {
       return {Authorization: `Bearer ${this._accessToken.accessToken}`};
     } else {
@@ -580,7 +653,13 @@ class OneGraphAuth {
     return friendlyServiceName(service);
   }
 
-  _makeAuthUrl = ({
+  _makeAuthUrl: ({
+    scopes: ?Array<string>,
+    service: Service,
+    stateParam: string,
+    useTestFlow: ?boolean,
+    verifier: string,
+  }) => Promise<string> = ({
     service,
     verifier,
     stateParam,
@@ -593,7 +672,7 @@ class OneGraphAuth {
     scopes: ?Array<string>,
     useTestFlow: ?boolean,
   }): Promise<string> => {
-    return PKCE.codeChallengeOfVerifier(verifier).then(challenge => {
+    return PKCE.codeChallengeOfVerifier(verifier).then((challenge) => {
       const query: any = {
         service,
         app_id: this.appId,
@@ -604,7 +683,6 @@ class OneGraphAuth {
         code_challenge: challenge.challenge,
         code_challenge_method: challenge.method,
         state: stateParam,
-
         ...(scopes ? {scopes: scopes.join(',')} : {}),
       };
       if (useTestFlow) {
@@ -619,13 +697,17 @@ class OneGraphAuth {
     });
   };
 
-  setToken = (token: Token) => {
+  setToken: (token: Token) => void = (token: Token) => {
     this._accessToken = token;
     const {refreshToken, ...storableToken} = token;
     this._storage.setItem(this._storageKey, JSON.stringify(storableToken));
   };
 
-  _waitForAuthFinishPostMessage = (
+  _waitForAuthFinishPostMessage: (
+    service: Service,
+    stateParam: StateParam,
+    verifier: string,
+  ) => Promise<AuthResponse> = (
     service: Service,
     stateParam: StateParam,
     verifier: string,
@@ -638,18 +720,19 @@ class OneGraphAuth {
           return {};
         }
       }
-      const listener = event => {
+      const listener = (event) => {
         const message = parseEvent(event);
-        if (message && message.version === 1) {
-          const {code, state} = message;
+        if (message && message.version <= 2) {
+          const {state} = message;
           if (state !== stateParam) {
             console.warn('Invalid state param, skipping event');
           } else {
+            const {error, error_description, code} = message;
             if (!code) {
               reject(
                 new OAuthError({
-                  error: 'invalid_grant',
-                  error_description: 'Missing code',
+                  error: error || 'invalid_grant',
+                  error_description: error_description || 'Missing code',
                 }),
               );
             } else {
@@ -662,7 +745,7 @@ class OneGraphAuth {
                 this._accessToken,
                 verifier,
               )
-                .then(response => {
+                .then((response) => {
                   if (response.error) {
                     reject(new OAuthError(response));
                   } else if (
@@ -684,7 +767,7 @@ class OneGraphAuth {
                     reject(new Error('Unexpected result from server'));
                   }
                 })
-                .catch(e => reject(e));
+                .catch((e) => reject(e));
             }
           }
         }
@@ -694,7 +777,11 @@ class OneGraphAuth {
     });
   };
 
-  _waitForAuthFinishRedirect = (
+  _waitForAuthFinishRedirect: (
+    service: Service,
+    stateParam: StateParam,
+    verifier: string,
+  ) => Promise<AuthResponse> = (
     service: Service,
     stateParam: StateParam,
     verifier: string,
@@ -733,7 +820,7 @@ class OneGraphAuth {
                   this._accessToken,
                   verifier,
                 )
-                  .then(response => {
+                  .then((response) => {
                     if (response.error) {
                       reject(new OAuthError(response));
                     } else if (
@@ -751,7 +838,7 @@ class OneGraphAuth {
                       reject(new Error('Unexpected result from server'));
                     }
                   })
-                  .catch(e => reject(e));
+                  .catch((e) => reject(e));
               }
             }
           }
@@ -770,15 +857,24 @@ class OneGraphAuth {
     });
   };
 
-  login = (
+  /**
+   * @throws {OAuthError}
+   */
+  login: (
+    service: Service,
+    scopes: ?Array<string>,
+    useTestFlow?: ?boolean,
+  ) => Promise<AuthResponse> = (
     service: Service,
     scopes: ?Array<string>,
     useTestFlow?: ?boolean,
   ): Promise<AuthResponse> => {
     if (!service) {
-      throw new Error(
-        "Missing required argument. Provide service as first argument to login (e.g. `auth.login('stripe')`).",
-      );
+      throw new OAuthError({
+        error: 'invalid_request',
+        error_description:
+          "Missing required argument. Provide service as first argument to login (e.g. `auth.login('stripe')`).",
+      });
     }
     this.cleanup(service);
     const stateParam = makeStateParam();
@@ -793,7 +889,6 @@ class OneGraphAuth {
       this._communicationMode === 'redirect'
         ? this._waitForAuthFinishRedirect
         : this._waitForAuthFinishPostMessage;
-    window.authWindow = authWindow;
     const windowUrl = this._makeAuthUrl({
       service,
       verifier,
@@ -802,27 +897,29 @@ class OneGraphAuth {
       useTestFlow,
     });
     return windowUrl
-      .then(url => {
+      .then((url) => {
         try {
           authWindow.location.href = url;
         } catch (e) {
-          const err = new Error('Popup window was closed or blocked');
-          // $FlowFixMe: create new error interface
-          err.type = 'auth-window-closed';
-          throw err;
+          throw new OAuthError({
+            error: 'invalid_response',
+            error_description: 'Popup window was closed or blocked',
+          });
         }
-        return authFinish(service, stateParam, verifier).then(result => {
+        return authFinish(service, stateParam, verifier).then((result) => {
           this.cleanup(service);
           return result;
         });
       })
-      .catch(e => {
-        this.cleanup(service);
+      .catch((e) => {
+        this.cleanup(service, true);
         throw e;
       });
   };
 
-  isLoggedIn = (
+  isLoggedIn: (
+    args: Service | {foreignUserId?: ?string, service: string},
+  ) => Promise<boolean> = (
     args: Service | {service: string, foreignUserId?: ?string},
   ): Promise<boolean> => {
     const accessToken = this._accessToken;
@@ -836,37 +933,38 @@ class OneGraphAuth {
       const foreignUserId =
         typeof args === 'string' ? null : args.foreignUserId;
       return fetchQuery(this._fetchUrl, loggedInQuery, {}, accessToken).then(
-        result => getIsLoggedIn(result, service, foreignUserId),
+        (result) => getIsLoggedIn(result, service, foreignUserId),
       );
     } else {
       return Promise.resolve(false);
     }
   };
 
-  servicesStatus = (): Promise<ServicesStatus> => {
-    const accessToken = this._accessToken;
-    if (accessToken) {
-      return fetchQuery(this._fetchUrl, loggedInQuery, {}, accessToken).then(
-        result =>
+  servicesStatus: () => Promise<ServicesStatus> =
+    (): Promise<ServicesStatus> => {
+      const accessToken = this._accessToken;
+      if (accessToken) {
+        return fetchQuery(this._fetchUrl, loggedInQuery, {}, accessToken).then(
+          (result) =>
+            ALL_SERVICES.reduce((acc, service) => {
+              acc[service] = {isLoggedIn: getIsLoggedIn(result, service)};
+              return acc;
+            }, {}),
+        );
+      } else {
+        return Promise.resolve(
           ALL_SERVICES.reduce((acc, service) => {
-            acc[service] = {isLoggedIn: getIsLoggedIn(result, service)};
+            acc[service] = {isLoggedIn: false};
             return acc;
           }, {}),
-      );
-    } else {
-      return Promise.resolve(
-        ALL_SERVICES.reduce((acc, service) => {
-          acc[service] = {isLoggedIn: false};
-          return acc;
-        }, {}),
-      );
-    }
-  };
+        );
+      }
+    };
 
-  allServices = (): Promise<ServicesList> => {
+  allServices: () => Promise<ServicesList> = (): Promise<ServicesList> => {
     return fetchQuery(this._fetchUrl, allServicesQuery, {}, null).then(
-      result => {
-        return result.data.oneGraph.services.map(serviceInfo => ({
+      (result) => {
+        return result.data.oneGraph.services.map((serviceInfo) => ({
           serviceEnum: serviceInfo.service,
           service: fromServiceEnum(serviceInfo.service),
           friendlyServiceName: serviceInfo.friendlyServiceName,
@@ -876,97 +974,97 @@ class OneGraphAuth {
     );
   };
 
-  loggedInServices = (): Promise<LoggedInServices> => {
-    const accessToken = this._accessToken;
-    if (accessToken) {
-      return fetchQuery(this._fetchUrl, loggedInQuery, {}, accessToken).then(
-        result => {
-          const loggedInServices =
-            idx(result, _ => _.data.me.serviceMetadata.loggedInServices) || [];
-          return loggedInServices.reduce((acc, serviceInfo) => {
-            const serviceKey = fromServiceEnum(serviceInfo.service);
-            const loggedInInfo = acc[serviceKey] || {
-              serviceEnum: serviceInfo.service,
-              foreignUserIds: [],
-            };
-            acc[serviceKey] = {
-              ...loggedInInfo,
-              usedTestFlow: serviceInfo.usedTestFlow,
-              foreignUserIds: [
-                serviceInfo.foreignUserId,
-                ...loggedInInfo.foreignUserIds,
-              ],
-            };
-            return acc;
-          }, {});
-        },
-      );
-    } else {
-      return Promise.resolve({});
-    }
-  };
+  loggedInServices: () => Promise<LoggedInServices> =
+    (): Promise<LoggedInServices> => {
+      const accessToken = this._accessToken;
+      if (accessToken) {
+        return fetchQuery(this._fetchUrl, loggedInQuery, {}, accessToken).then(
+          (result) => {
+            const loggedInServices =
+              idx(result, (_) => _.data.me.serviceMetadata.loggedInServices) ||
+              [];
+            return loggedInServices.reduce((acc, serviceInfo) => {
+              const serviceKey = fromServiceEnum(serviceInfo.service);
+              const loggedInInfo = acc[serviceKey] || {
+                serviceEnum: serviceInfo.service,
+                foreignUserIds: [],
+              };
+              acc[serviceKey] = {
+                ...loggedInInfo,
+                usedTestFlow: serviceInfo.usedTestFlow,
+                foreignUserIds: [
+                  serviceInfo.foreignUserId,
+                  ...loggedInInfo.foreignUserIds,
+                ],
+              };
+              return acc;
+            }, {});
+          },
+        );
+      } else {
+        return Promise.resolve({});
+      }
+    };
 
-  logout = (
-    service: Service,
-    foreignUserId?: ?string,
-  ): Promise<LogoutResult> => {
-    if (!service) {
-      throw new Error(
-        "Missing required argument. Provide service as first argument to logout (e.g. `auth.logout('stripe')`).",
-      );
-    }
-    this.cleanup(service);
-    const accessToken = this._accessToken;
-    if (accessToken) {
-      const serviceEnum = getServiceEnum(service);
+  logout: (service: Service, foreignUserId?: ?string) => Promise<LogoutResult> =
+    (service: Service, foreignUserId?: ?string): Promise<LogoutResult> => {
+      if (!service) {
+        throw new Error(
+          "Missing required argument. Provide service as first argument to logout (e.g. `auth.logout('stripe')`).",
+        );
+      }
+      this.cleanup(service);
+      const accessToken = this._accessToken;
+      if (accessToken) {
+        const serviceEnum = getServiceEnum(service);
 
-      const signoutPromise = foreignUserId
-        ? fetchQuery(
-            this._fetchUrl,
-            logoutUserMutation,
-            {
-              service: serviceEnum,
-              foreignUserId: foreignUserId,
-            },
-            accessToken,
-          )
-        : fetchQuery(
-            this._fetchUrl,
-            logoutMutation,
-            {
-              services: [serviceEnum],
-            },
-            accessToken,
-          );
-      return signoutPromise.then(result => {
-        if (
-          result.errors &&
-          result.errors.length &&
-          getServiceErrors(result.errors).length
-        ) {
-          return {result: 'failure', errors: result.errors};
-        } else {
-          const loggedIn = getIsLoggedIn(
-            {data: result.signoutServices},
-            service,
-            foreignUserId,
-          );
-          return {result: loggedIn ? 'failure' : 'success'};
-        }
-      });
-    } else {
-      return Promise.resolve({result: 'failure'});
-    }
-  };
+        const signoutPromise = foreignUserId
+          ? fetchQuery(
+              this._fetchUrl,
+              logoutUserMutation,
+              {
+                service: serviceEnum,
+                foreignUserId: foreignUserId,
+              },
+              accessToken,
+            )
+          : fetchQuery(
+              this._fetchUrl,
+              logoutMutation,
+              {
+                services: [serviceEnum],
+              },
+              accessToken,
+            );
+        return signoutPromise.then((result) => {
+          if (
+            result.errors &&
+            result.errors.length &&
+            getServiceErrors(result.errors).length
+          ) {
+            return {result: 'failure', errors: result.errors};
+          } else {
+            const loggedIn = getIsLoggedIn(
+              {data: result.signoutServices},
+              service,
+              foreignUserId,
+            );
+            return {result: loggedIn ? 'failure' : 'success'};
+          }
+        });
+      } else {
+        return Promise.resolve({result: 'failure'});
+      }
+    };
 
-  destroy = () => {
-    Object.keys(this._intervalIds).forEach(key => this.cleanup(key));
-    Object.keys(this._authWindows).forEach(key => this.cleanup(key));
+  destroy: () => void = () => {
+    Object.keys(this._intervalIds).forEach((key) => this.cleanup(key));
+    Object.keys(this._authWindows).forEach((key) => this.cleanup(key));
     this._storage.removeItem(this._storageKey);
     this._accessToken = null;
   };
 
-  findMissingAuthServices = findMissingAuthServices;
+  findMissingAuthServices: any = findMissingAuthServices;
 }
 
 export default OneGraphAuth;

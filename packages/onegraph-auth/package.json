@@ -5,6 +5,7 @@
   "homepage": "https://github.com/OneGraph/onegraph-client/tree/master/packages/onegraph-auth",
   "main": "dist/bundle.umd.js",
   "module": "dist/bundle.es.js",
+  "types": "dist/index.d.ts",
   "license": "MIT",
   "devDependencies": {
     "babel-cli": "^6.26.0",
@@ -20,14 +21,14 @@
     "babel-preset-flow": "^6.23.0",
     "babel-preset-react": "^6.5.0",
     "flow-bin": "^0.123.0",
-    "prettier": "1.10.2",
+    "prettier": "2.3.2",
     "rollup": "^0.54.0",
     "rollup-plugin-babel": "^3.0.3",
     "rollup-plugin-flow": "^1.1.1",
     "rollup-plugin-node-resolve": "^3.0.2"
   },
   "scripts": {
-    "prettier": "prettier --write \"src/**/*.js\"",
+    "prettier": "prettier --write \"src/**/*.js\" \"src/**/*.ts\"",
     "build": "node build.js",
     "clean": "mkdir -p dist && rm -r dist",
     "flow": "flow"
