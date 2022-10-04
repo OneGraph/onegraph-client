@@ -10,7 +10,7 @@ const idx = require('idx');
 
 import type {Storage} from './storage';
 
-export type Service =
+export type StaticService =
   | 'adroll'
   | 'asana'
   | 'box'
@@ -52,6 +52,8 @@ export type Service =
   | 'zeit'
   | 'zendesk';
 
+export type Service = StaticService | { graphQLField: string };
+
 type CommunicationMode = 'post_message' | 'redirect';
 
 export type Opts = {
@@ -81,15 +83,16 @@ export type ServiceStatus = {
 
 export type LoggedInServices = {
   [service: string]: {
-    serviceEnum: string,
+    service: string,
+    graphQLField: string,
     foreignUserIds: Array<string>,
     usedTestFlow: boolean,
   },
 };
 
 export type ServiceInfo = {
-  service: string,
-  serviceEnum: string,
+  service: Service,
+  graphQLField: string,
   friendlyServiceName: string,
   supportsTestFlow: boolean,
 };
@@ -151,91 +154,103 @@ const ALL_SERVICES = [
   'zendesk',
 ];
 
+function serviceString(service: Service): string {
+  if (typeof service === 'string') {
+    return service;
+  } else {
+      return service.graphQLField
+  }
+}
+
 function friendlyServiceName(service: Service): string {
-  switch (service) {
-    case 'adroll':
-      return 'Adroll';
-    case 'asana':
-      return 'Asana';
-    case 'box':
-      return 'Box';
-    case 'dev-to':
-      return 'Dev.to';
-    case 'dribbble':
-      return 'Dribbble';
-    case 'dropbox':
-      return 'Dropbox';
-    case 'contentful':
-      return 'Contentful';
-    case 'eggheadio':
-      return 'Egghead.io';
-    case 'eventil':
-      return 'Eventil';
-    case 'facebook':
-      return 'Facebook';
-    case 'firebase':
-      return 'Firebase';
-    case 'github':
-      return 'GitHub';
-    case 'gmail':
-      return 'Gmail';
-    case 'google':
-      return 'Google';
-    case 'google-ads':
-      return 'Google Ads';
-    case 'google-analytics':
-      return 'Google Analytics';
-    case 'google-calendar':
-      return 'Google Calendar';
-    case 'google-compute':
-      return 'Google Compute';
-    case 'google-docs':
-      return 'Google Docs';
-    case 'google-search-console':
-      return 'Google Search Console';
-    case 'google-translate':
-      return 'Google Translate';
-    case 'hubspot':
-      return 'Hubspot';
-    case 'intercom':
-      return 'Intercom';
-    case 'mailchimp':
-      return 'Mailchimp';
-    case 'meetup':
-      return 'Meetup';
-    case 'netlify':
-      return 'Netlify';
-    case 'product-hunt':
-      return 'Product Hunt';
-    case 'quickbooks':
-      return 'QuickBooks';
-    case 'salesforce':
-      return 'Salesforce';
-    case 'slack':
-      return 'Slack';
-    case 'spotify':
-      return 'Spotify';
-    case 'stripe':
-      return 'Stripe';
-    case 'trello':
-      return 'Trello';
-    case 'twilio':
-      return 'Twilio';
-    case 'twitter':
-      return 'Twitter';
-    case 'twitch-tv':
-      return 'Twitch';
-    case 'ynab':
-      return 'You Need a Budget';
-    case 'youtube':
-      return 'YouTube';
-    case 'zeit':
-      return 'Vercel';
-    case 'zendesk':
-      return 'Zendesk';
-    default:
-      (service: empty); // exhaustive switch check from flow
-      return service;
+  if (typeof service === 'string') {
+    switch (service) {
+      case 'adroll':
+        return 'Adroll';
+      case 'asana':
+        return 'Asana';
+      case 'box':
+        return 'Box';
+      case 'dev-to':
+        return 'Dev.to';
+      case 'dribbble':
+        return 'Dribbble';
+      case 'dropbox':
+        return 'Dropbox';
+      case 'contentful':
+        return 'Contentful';
+      case 'eggheadio':
+        return 'Egghead.io';
+      case 'eventil':
+        return 'Eventil';
+      case 'facebook':
+        return 'Facebook';
+      case 'firebase':
+        return 'Firebase';
+      case 'github':
+        return 'GitHub';
+      case 'gmail':
+        return 'Gmail';
+      case 'google':
+        return 'Google';
+      case 'google-ads':
+        return 'Google Ads';
+      case 'google-analytics':
+        return 'Google Analytics';
+      case 'google-calendar':
+        return 'Google Calendar';
+      case 'google-compute':
+        return 'Google Compute';
+      case 'google-docs':
+        return 'Google Docs';
+      case 'google-search-console':
+        return 'Google Search Console';
+      case 'google-translate':
+        return 'Google Translate';
+      case 'hubspot':
+        return 'Hubspot';
+      case 'intercom':
+        return 'Intercom';
+      case 'mailchimp':
+        return 'Mailchimp';
+      case 'meetup':
+        return 'Meetup';
+      case 'netlify':
+        return 'Netlify';
+      case 'product-hunt':
+        return 'Product Hunt';
+      case 'quickbooks':
+        return 'QuickBooks';
+      case 'salesforce':
+        return 'Salesforce';
+      case 'slack':
+        return 'Slack';
+      case 'spotify':
+        return 'Spotify';
+      case 'stripe':
+        return 'Stripe';
+      case 'trello':
+        return 'Trello';
+      case 'twilio':
+        return 'Twilio';
+      case 'twitter':
+        return 'Twitter';
+      case 'twitch-tv':
+        return 'Twitch';
+      case 'ynab':
+        return 'You Need a Budget';
+      case 'youtube':
+        return 'YouTube';
+      case 'zeit':
+        return 'Vercel';
+      case 'zendesk':
+        return 'Zendesk';
+      default:
+        (service: empty); // exhaustive switch check from flow
+        return service;
+    }
+  } else {
+      return 'service identified by field ' + service.graphQLField
   }
 }
 
@@ -274,7 +289,7 @@ function createAuthWindow({
   const w = window.open(
     url || '',
     // A unqiue name prevents orphaned popups from stealing our window.open
-    `${service}_${Math.random()}`.replace('.', ''),
+    `${serviceString(service)}_${Math.random()}`.replace('.', ''),
     Object.keys(windowOpts)
       .map((k) => `${k}=${windowOpts[k]}`)
       .join(','),
@@ -305,7 +320,8 @@ query LoggedInQuery {
   me {
     serviceMetadata {
       loggedInServices {
-        service
+        id
+        graphQLField
         foreignUserId
         usedTestFlow
       }
@@ -318,7 +334,8 @@ const allServicesQuery = `
 query AllServicesQuery {
   oneGraph {
     services(filter: {supportsOauthLogin: true}) {
-      service
+      id
+      graphQLField
       friendlyServiceName
       supportsTestFlow
     }
@@ -326,26 +343,24 @@ query AllServicesQuery {
 }
 `;
 
-function getServiceEnum(service: string): string {
-  return service.toUpperCase().replace(/-/g, '_');
-}
-
-function fromServiceEnum(serviceEnum: string): string {
-  return serviceEnum.toLowerCase().replace(/_/g, '-');
+function isUUID(arg: string): bool {
+  return /[a-f0-9]{8}(?:-[a-f0-9]{4}){4}[a-f0-9]{8}/g.test(arg)
 }
 
 function getIsLoggedIn(
   queryResult: Object,
-  service: string,
+  service: Service,
   foreignUserId?: ?string,
 ): boolean {
-  const serviceEnum = getServiceEnum(service);
   const loggedInServices =
     idx(queryResult, (_) => _.data.me.serviceMetadata.loggedInServices) || [];
   return !!loggedInServices.find(
-    (serviceInfo) =>
-      serviceInfo.service === serviceEnum &&
-      (!foreignUserId || foreignUserId === serviceInfo.foreignUserId),
+    (serviceInfo) => {
+
+      const [serviceInfoProp, serviceProp] = service.graphQLField != null ? [ serviceInfo.graphQLfield, service.graphQLField ] : [serviceInfo.id, service];
+      return serviceInfoProp === serviceProp &&
+      (!foreignUserId || foreignUserId === serviceInfo.foreignUserId);
+    }
   );
 }
 
@@ -354,9 +369,13 @@ function getServiceErrors(errors, service) {
 }
 
 const logoutMutation = `mutation SignOutServicesMutation(
-  $services: [OneGraphServiceEnum!]!
+  $services: [OneGraphServiceEnum!]
+  $graphQLFields: [String!]
 ) {
-  signoutServices(data: { services: $services }) {
+  signoutServices(data: {
+    services: $services
+    servicesGraphQLFields: $graphQLFields
+  }) {
     me {
       serviceMetadata {
         loggedInServices {
@@ -369,12 +388,14 @@ const logoutMutation = `mutation SignOutServicesMutation(
 }`;
 
 const logoutUserMutation = `mutation SignOutServicesMutation(
-  $service: OneGraphServiceEnum!
+  $service: OneGraphServiceEnum
+  $graphQLField: String
   $foreignUserId: String!
 ) {
   signoutServiceUser(
     input: {
       service: $service
+      graphQLField: $graphQLField
       foreignUserId: $foreignUserId
     }
   ) {
@@ -501,8 +522,8 @@ function tokenFromStorage(storage: Storage, appId: string): ?Token {
 const DEFAULT_ONEGRAPH_ORIGIN = 'https://serve.onegraph.com';
 
 class OneGraphAuth {
-  _authWindows: {[service: Service]: Window} = {};
-  _intervalIds: {[service: Service]: IntervalID} = {};
+  _authWindows: {[string]: Window} = {};
+  _intervalIds: {[string]: IntervalID} = {};
   _messageListeners: {[service: Service]: any} = {};
   _fetchUrl: string;
   _redirectOrigin: string;
@@ -546,8 +567,9 @@ class OneGraphAuth {
   }
 
   _clearInterval: (service: Service) => void = (service: Service) => {
-    clearInterval(this._intervalIds[service]);
-    delete this._intervalIds[service];
+    const key = (typeof service === 'string') ? service  : service.graphQLField ;
+    clearInterval(this._intervalIds[key]);
+    delete this._intervalIds[key];
   };
 
   _clearMessageListener: (service: Service) => void = (service: Service) => {
@@ -560,9 +582,10 @@ class OneGraphAuth {
   };
 
   closeAuthWindow: (service: Service) => void = (service: Service) => {
-    const w = this._authWindows[service];
+    const key = (typeof service === 'string') ? service  : service.graphQLField ;
+    const w = this._authWindows[key];
     w && w.close();
-    delete this._authWindows[service];
+    delete this._authWindows[key];
   };
 
   cleanup: (service: Service, keepWindowOpen?: boolean) => void = (
@@ -655,7 +678,7 @@ class OneGraphAuth {
 
   _makeAuthUrl: ({
     scopes: ?Array<string>,
-    service: Service,
+    service: string,
     stateParam: string,
     useTestFlow: ?boolean,
     verifier: string,
@@ -672,9 +695,10 @@ class OneGraphAuth {
     scopes: ?Array<string>,
     useTestFlow: ?boolean,
   }): Promise<string> => {
+    const serviceKey = (typeof service === 'string') ? service  : service.graphQLField ;
     return PKCE.codeChallengeOfVerifier(verifier).then((challenge) => {
       const query: any = {
-        service,
+        service: serviceKey,
         app_id: this.appId,
         response_type: 'code',
         redirect_origin: this._redirectOrigin,
@@ -787,10 +811,11 @@ class OneGraphAuth {
     verifier: string,
   ): Promise<AuthResponse> => {
     return new Promise((resolve, reject) => {
-      this._intervalIds[service] = setInterval(() => {
+      const key = (typeof service === 'string') ? service  : service.graphQLField ;
+      this._intervalIds[key] = setInterval(() => {
         try {
           const authUri = URI.safeParse(
-            this._authWindows[service].location.toString(),
+            this._authWindows[key].location.toString(),
           );
           if (authUri && authUri.origin === this._redirectOrigin) {
             const params = authUri.query;
@@ -847,7 +872,7 @@ class OneGraphAuth {
             // do nothing--probably on the service's or onegraph's domain
           } else {
             console.error(
-              'unexpected error waiting for auth to finish for ' + service,
+              'unexpected error waiting for auth to finish for ' + friendlyServiceName(service),
               e,
             );
             reject(e);
@@ -873,7 +898,7 @@ class OneGraphAuth {
       throw new OAuthError({
         error: 'invalid_request',
         error_description:
-          "Missing required argument. Provide service as first argument to login (e.g. `auth.login('stripe')`).",
+          "Missing required argument. Provide service or graphQLField identifying the service as first argument to login (e.g. `auth.login('stripe')`).",
       });
     }
     this.cleanup(service);
@@ -884,7 +909,8 @@ class OneGraphAuth {
     // If we waited until _makeAuthUrl's promise resolved, we might trigger
     // a popup blocker
     const authWindow = createAuthWindow({service});
-    this._authWindows[service] = authWindow;
+    const key = (typeof service === 'string') ? service  : service.graphQLField ;
+    this._authWindows[key] = authWindow;
     const authFinish =
       this._communicationMode === 'redirect'
         ? this._waitForAuthFinishRedirect
@@ -918,22 +944,24 @@ class OneGraphAuth {
   };
 
   isLoggedIn: (
-    args: Service | {foreignUserId?: ?string, service: string},
+    args: Service | {service: string, foreignUserId?: ?string},
   ) => Promise<boolean> = (
     args: Service | {service: string, foreignUserId?: ?string},
   ): Promise<boolean> => {
     const accessToken = this._accessToken;
     if (accessToken) {
-      const service = typeof args === 'string' ? args : args.service;
+      const service = args.service != null ? args.service : (args.graphQLField != null ? args : args);
       if (!service) {
         throw new Error(
           "Missing required argument. Provide service as first argument to isLoggedIn (e.g. `auth.isLoggedIn('stripe')`).",
         );
       }
       const foreignUserId =
-        typeof args === 'string' ? null : args.foreignUserId;
+        args.foreignUserId != null ? args.foreignUserId : null;
       return fetchQuery(this._fetchUrl, loggedInQuery, {}, accessToken).then(
-        (result) => getIsLoggedIn(result, service, foreignUserId),
+        (result) =>
+        // $FlowFixMe
+        getIsLoggedIn(result, service, foreignUserId),
       );
     } else {
       return Promise.resolve(false);
@@ -964,14 +992,16 @@ class OneGraphAuth {
   allServices: () => Promise<ServicesList> = (): Promise<ServicesList> => {
     return fetchQuery(this._fetchUrl, allServicesQuery, {}, null).then(
       (result) => {
-        return result.data.oneGraph.services.map((serviceInfo) => ({
-          serviceEnum: serviceInfo.service,
-          service: fromServiceEnum(serviceInfo.service),
-          friendlyServiceName: serviceInfo.friendlyServiceName,
-          supportsTestFlow: serviceInfo.supportsTestFlow,
-        }));
+        return result.data.oneGraph.services.map((serviceInfo) => {
+          console.log('wtf', serviceInfo.id, isUUID(serviceInfo.id), isUUID(serviceInfo.id));
+          return ({
+            service: isUUID(serviceInfo.id) ? { graphQLField: serviceInfo.graphQLField } : serviceInfo.id,
+            graphQLField: serviceInfo.graphQLField,
+            friendlyServiceName: serviceInfo.friendlyServiceName,
+            supportsTestFlow: serviceInfo.supportsTestFlow,
+          })});
       },
-    );
+    )
   };
 
   loggedInServices: () => Promise<LoggedInServices> =
@@ -984,9 +1014,9 @@ class OneGraphAuth {
               idx(result, (_) => _.data.me.serviceMetadata.loggedInServices) ||
               [];
             return loggedInServices.reduce((acc, serviceInfo) => {
-              const serviceKey = fromServiceEnum(serviceInfo.service);
+              const serviceKey = serviceInfo.id;
               const loggedInInfo = acc[serviceKey] || {
-                serviceEnum: serviceInfo.service,
+                service: isUUID(serviceInfo.id) ? { graphQLField: serviceInfo.graphQLField } : serviceInfo.id,
                 foreignUserIds: [],
               };
               acc[serviceKey] = {
@@ -1016,23 +1046,24 @@ class OneGraphAuth {
       this.cleanup(service);
       const accessToken = this._accessToken;
       if (accessToken) {
-        const serviceEnum = getServiceEnum(service);
-
         const signoutPromise = foreignUserId
           ? fetchQuery(
               this._fetchUrl,
               logoutUserMutation,
-              {
-                service: serviceEnum,
+              Object.assign({
+                service: undefined,
+                graphQLField: undefined,
                 foreignUserId: foreignUserId,
-              },
+              }, service.graphQLField != null ? {
+                graphQLField: service.graphQLField
+              } : { service }),
               accessToken,
             )
           : fetchQuery(
               this._fetchUrl,
               logoutMutation,
-              {
-                services: [serviceEnum],
+              service.graphQLField != null ? { services: [service] } : {
+                graphQLFields: [service.graphQLField]
               },
               accessToken,
             );
@@ -1058,8 +1089,14 @@ class OneGraphAuth {
     };
 
   destroy: () => void = () => {
-    Object.keys(this._intervalIds).forEach((key) => this.cleanup(key));
-    Object.keys(this._authWindows).forEach((key) => this.cleanup(key));
+    Object.keys(this._intervalIds).forEach((key) => {
+      const service = ALL_SERVICES.includes(key) ? key : {graphQLField:key};
+      // $FlowFixMe
+      return this.cleanup(service)});
+    Object.keys(this._authWindows).forEach((key) => {
+      const service = ALL_SERVICES.includes(key) ? key : {graphQLField:key};
+      // $FlowFixMe
+      return this.cleanup(key)});
     this._storage.removeItem(this._storageKey);
     this._accessToken = null;
   };
